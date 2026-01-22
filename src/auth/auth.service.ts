@@ -2,6 +2,7 @@ import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { AdminsService } from 'src/admins/admins.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
+import { CreateUserDto } from 'src/dto/user.dto';
 
 @Injectable()
 export class AuthService {
@@ -10,21 +11,29 @@ export class AuthService {
         private jwtService: JwtService,
     ) {}
 
-    async signIn(name: string, password: string){
-        const admin = await this.adminsService.findOneByName(name);
+    async signIn(signInDto: CreateUserDto){
 
-        if (!admin || !(await bcrypt.compare(password, admin.password))) {
+        // cek admin
+        const admin = await this.adminsService.findOneByName(signInDto.name);
+        if (!admin) {
+            throw new UnauthorizedException('Nama atau Password Salah!');
+        }
+        
+        // cek password
+        const isPasswordValid = await bcrypt.compare(signInDto.password, admin.password);
+        if (!isPasswordValid) {
             throw new UnauthorizedException('Nama atau Password Salah!');
         }
 
+        // buat token
         const payload = { 
             sub: admin._id, 
             username: admin.name, 
-            level: (admin as any).level 
+            level: admin.level 
         };
 
         return {
-            access_token: this.jwtService.sign(payload),
+            access_token: await this.jwtService.signAsync(payload),
         };
     }
 

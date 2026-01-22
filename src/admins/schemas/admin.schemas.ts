@@ -1,7 +1,7 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
+import { HydratedDocument } from "mongoose";
 
-export type AdminDocument = Admin & Document;
+export type AdminDocument = HydratedDocument<Admin>;
 
 @Schema({ timestamps: true }) 
 export class Admin {
@@ -13,8 +13,8 @@ export class Admin {
 
     @Prop({ 
         required: true, 
-        default: "staff", 
-        enum: ["superadmin", "editor", "staff"] 
+        default: "0", 
+        enum: ["0", "1", "2"] // 0 = staff, 
     })
     level: string; 
 

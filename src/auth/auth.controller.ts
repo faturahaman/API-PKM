@@ -1,5 +1,6 @@
 import { Body, Controller, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { CreateUserDto } from 'src/dto/user.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -7,7 +8,7 @@ export class AuthController {
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
-  signIn(@Body() signInDto: Record<string, any>) {
-    return this.authService.signIn(signInDto.name, signInDto.password);
+  signIn(@Body() signInDto: CreateUserDto) {
+    return this.authService.signIn(signInDto);
   }
 }
