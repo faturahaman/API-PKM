@@ -1,19 +1,19 @@
 import { Controller, Post, Res, UseGuards, HttpStatus, HttpCode, Request, Body } from '@nestjs/common';
-import express from 'express'; // <--- Pastikan import ini dari 'express'
+import express from 'express'; 
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
-import { CreateUserDto } from 'src/dto/user.dto';
+import { CreateUserDto } from 'src/admins/dto/create-user.dto';
 
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) {}
+  constructor(private authService: AuthService) { }
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
   signIn(@Body() signInDto: CreateUserDto) {
     return this.authService.signIn(signInDto);
-  } 
+  }
 
   @UseGuards(AuthGuard('jwt'))
   @Post('logout')
@@ -22,7 +22,7 @@ export class AuthController {
     response.clearCookie('access_token', {
       httpOnly: true,
       path: '/',
-      sameSite: 'lax', // Sesuaikan dengan setting saat login (lax/none/strict)
+      sameSite: 'lax', // sesuaikan (lax/none/strict)
       secure: false,
     })
     return {

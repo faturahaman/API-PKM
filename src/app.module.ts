@@ -5,6 +5,9 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { AdminsModule } from './admins/admins.module';
 import { ConfigModule } from '@nestjs/config';
+import { GalleryModule } from './gallery/gallery.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 
 @Module({
   imports: [
@@ -14,7 +17,13 @@ import { ConfigModule } from '@nestjs/config';
     MongooseModule.forRoot('mongodb://127.0.0.1:27017/pkm-api'),
     AdminsModule,
     AuthModule,
+    GalleryModule,
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+    }),
   ],
+
+
   controllers: [AppController],
   providers: [AppService],
 })
