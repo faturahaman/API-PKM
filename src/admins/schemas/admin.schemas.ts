@@ -14,7 +14,7 @@ export class Admin {
     @Prop({ 
         required: true, 
         default: "0", 
-        enum: ["0", "1", "2"] // 0 = staff, 
+        enum: ["0", "1", "2"] // 0 = staff, 1 = admin, 2 = super admin
     })
     level: string; 
 
