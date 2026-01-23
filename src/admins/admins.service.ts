@@ -10,4 +10,8 @@ export class AdminsService {
     async findOneByName(name: string): Promise<AdminDocument | null> {
       return this.adminModel.findOne({ name }).exec();
     }
+
+    async findOne(id: string): Promise<AdminDocument | null> {
+      return this.adminModel.findById(id).select('-password').exec();
+    }
 }

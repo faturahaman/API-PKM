@@ -3,6 +3,7 @@ import { AdminsService } from 'src/admins/admins.service';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from 'src/dto/user.dto';
+import { JwtPayload } from 'src/types/jwt.interface';
 
 @Injectable()
 export class AuthService {
@@ -26,9 +27,9 @@ export class AuthService {
         }
 
         // buat token
-        const payload = { 
-            sub: admin._id, 
-            username: admin.name, 
+        const payload: JwtPayload = { 
+            sub: admin._id.toString(), 
+            name: admin.name, 
             level: admin.level 
         };
 
