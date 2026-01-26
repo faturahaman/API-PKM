@@ -46,16 +46,17 @@ export class AdminsController {
         cb(null, filename);
       },
     }),
+    
     limits: { fileSize: 2 * 1024 * 1024 },
   }))
   async updateProfile(
     @Request() req: any,
-    @UploadedFile() file: Express.Multer.File,
-    @Body() body: { name: string }
+    @Body() body: { name: string },
+    @UploadedFile() file?: Express.Multer.File
   ) {
-
     const adminId = req.user._id;
-    const photoPath = `profiles/${file.filename}`;
+
+    const photoPath = file ? file.filename : undefined;
 
     return this.adminsService.updateProfile(adminId, photoPath, body.name);
   }
