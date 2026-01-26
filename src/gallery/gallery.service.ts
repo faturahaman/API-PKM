@@ -10,7 +10,6 @@ import * as path from 'path';
 export class GalleryService {
   constructor(@InjectModel(Gallery.name) private galleryModel: Model<Gallery>) {}
 
-  // --- CREATE ---
   async create(createGalleryDto: CreateGalleryDto, imagePath: string) {
     const newGallery = new this.galleryModel({
       ...createGalleryDto,

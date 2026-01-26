@@ -5,10 +5,15 @@ export class CreateGalleryDto {
   @IsString()
   image_title: string;
 
+  @IsNotEmpty()
+  @IsString()
+  image: string;
+
   @IsOptional()
   @IsString()
   description?: string;
 
-  @IsNotEmpty()
-  album_id: string;
+  @IsOptional()
+  @IsString()
+  album_id?: string;
 }

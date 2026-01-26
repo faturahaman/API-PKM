@@ -14,7 +14,7 @@ export class Gallery {
   @Prop({ required: false })
   description: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   album_id: string; 
 }
 
