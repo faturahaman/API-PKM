@@ -18,12 +18,18 @@ import { join } from 'path';
     AdminsModule,
     AuthModule,
     GalleryModule,
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'public'),
-    }),
+    
+    ServeStaticModule.forRoot(
+      {
+        rootPath: join(__dirname, '..', 'public'),
+      },
+      //config pp
+      {
+        rootPath: join(__dirname, '..', 'uploads'), 
+        serveRoot: '/uploads', 
+      },
+    ),
   ],
-
-
   controllers: [AppController],
   providers: [AppService],
 })
