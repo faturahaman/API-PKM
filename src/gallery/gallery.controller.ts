@@ -14,7 +14,7 @@ export class GalleryController {
   constructor(private readonly galleryService: GalleryService) {}
 
   @UseGuards(AuthGuard('jwt')) 
-  @Post()
+  @Post('upload-photo')
   @UseInterceptors(FileInterceptor('image', multerOptions))
   create(@UploadedFile() file: Express.Multer.File, @Body() createGalleryDto: CreateGalleryDto) {
     if (!file) throw new BadRequestException('File gambar wajib diupload!');

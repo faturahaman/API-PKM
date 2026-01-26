@@ -22,7 +22,7 @@ export class AuthController {
     response.clearCookie('access_token', {
       httpOnly: true,
       path: '/',
-      sameSite: 'lax', // sesuaikan (lax/none/strict)
+      sameSite: 'lax',
       secure: false,
     })
     return {

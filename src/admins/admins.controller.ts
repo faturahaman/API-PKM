@@ -1,25 +1,26 @@
-import { 
-  Controller, 
-  Get, 
-  Put, 
-  UseGuards, 
-  Request, 
-  UseInterceptors, 
-  UploadedFile, 
-  BadRequestException 
+import {
+  Controller,
+  Get,
+  Put,
+  UseGuards,
+  Request,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
+  Body
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import { extname, join } from 'path'; // Tambah 'join'
-import { existsSync, mkdirSync } from 'fs'; // Tambah 'fs'
+import { extname, join } from 'path';
+import { existsSync, mkdirSync } from 'fs';
 import { AdminsService } from './admins.service';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'))
 export class AdminsController {
-  
-  constructor(private adminsService: AdminsService) {}
+
+  constructor(private adminsService: AdminsService) { }
 
   @Get('profile')
   getProfile(@Request() req: any) {
@@ -36,39 +37,26 @@ export class AdminsController {
     storage: diskStorage({
       destination: (req, file, cb) => {
         const uploadPath = join(process.cwd(), 'public', 'profiles');
-        
-        if (!existsSync(uploadPath)) {
-          mkdirSync(uploadPath, { recursive: true });
-        }
-        
+        if (!existsSync(uploadPath)) mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath);
       },
       filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
         const ext = extname(file.originalname);
-        cb(null, `admin-${uniqueSuffix}${ext}`);
+        const filename = `admin-${Date.now()}${ext}`;
+        cb(null, filename);
       },
     }),
-    fileFilter: (req, file, cb) => {
-      if (!file.mimetype.match(/\/(jpg|jpeg|png)$/)) {
-        return cb(new BadRequestException('Hanya file gambar yang diperbolehkan!'), false);
-      }
-      cb(null, true);
-    },
-    limits: { fileSize: 2 * 1024 * 1024 } 
+    limits: { fileSize: 2 * 1024 * 1024 },
   }))
   async updateProfile(
-    @Request() req: any, 
-    @UploadedFile() file: Express.Multer.File
+    @Request() req: any,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: { name: string }
   ) {
-    if (!file) {
-      throw new BadRequestException('File foto wajib diupload');
-    }
 
-    const adminId = req.user._id; 
+    const adminId = req.user._id;
+    const photoPath = `profiles/${file.filename}`;
 
-    const photoPath = `profiles/${file.filename}`; 
-
-    return this.adminsService.updatePhoto(adminId, photoPath);
+    return this.adminsService.updateProfile(adminId, photoPath, body.name);
   }
 }

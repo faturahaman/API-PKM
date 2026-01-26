@@ -14,11 +14,12 @@ export class AdminsService {
   async findOne(id: string): Promise<AdminDocument | null> {
     return this.adminModel.findById(id).select('-password').exec();
   }
-  async updatePhoto(id: string, photoPath: string): Promise<AdminDocument> {
+
+  async updateProfile(id: string, photoPath: string, name: string): Promise<AdminDocument> {
     const updatedAdmin = await this.adminModel
       .findByIdAndUpdate(
         id,
-        { photo: photoPath },
+        { photo: photoPath, name },
         { new: true }
       )
       .select('-password')
