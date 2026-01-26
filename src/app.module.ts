@@ -11,24 +11,15 @@ import { join } from 'path';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot('mongodb://127.0.0.1:27017/pkm-api'),
     AdminsModule,
     AuthModule,
     GalleryModule,
     
-    ServeStaticModule.forRoot(
-      {
-        rootPath: join(__dirname, '..', 'public'),
-      },
-      //config pp
-      {
-        rootPath: join(__dirname, '..', 'uploads'), 
-        serveRoot: '/uploads', 
-      },
-    ),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), 'public'), 
+    }),
   ],
   controllers: [AppController],
   providers: [AppService],
