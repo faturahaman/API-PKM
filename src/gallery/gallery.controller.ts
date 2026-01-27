@@ -1,7 +1,8 @@
 import { 
-  Controller, Get, Post, Body, Param, Delete, 
+  Controller, Get, Post, Body, Param, Put, 
   UseInterceptors, UploadedFile, BadRequestException, 
-  UseGuards
+  UseGuards,
+  Delete
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';

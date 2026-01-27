@@ -14,24 +14,26 @@ export class GalleryService {
     const newGallery = new this.galleryModel({
       ...createGalleryDto,
       image: imagePath,
+      is_deleted: false,
     });
     return newGallery.save();
   }
 
   async findAll() {
-    return this.galleryModel.find().sort({ upload_date: -1 }).exec();
+    return this.galleryModel.find({ is_deleted: false }).sort({ upload_date: -1 }).exec();
   }
 
   async remove(id: string) {
-    const gallery = await this.galleryModel.findById(id);
-    if (!gallery) throw new NotFoundException('Data tidak ditemukan');
+    const updatedGallery = await this.galleryModel.findByIdAndUpdate(
+      id,
+      { is_deleted: true },
+      { new: true } 
+    );
 
-    const filePath = path.join(process.cwd(), 'public', gallery.image); 
-
-    if (fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    if (!updatedGallery) {
+      throw new NotFoundException('Data tidak ditemukan');
     }
 
-    return this.galleryModel.findByIdAndDelete(id);
+    return updatedGallery;
   }
 }

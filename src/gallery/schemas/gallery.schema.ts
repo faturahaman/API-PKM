@@ -15,7 +15,10 @@ export class Gallery {
   description: string;
 
   @Prop({ required: false })
-  album_id: string; 
+  album_id: string;
+
+  @Prop({ required: false, default: false })
+  is_deleted: boolean;
 }
 
 export const GallerySchema = SchemaFactory.createForClass(Gallery);
