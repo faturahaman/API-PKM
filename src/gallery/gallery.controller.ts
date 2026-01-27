@@ -1,6 +1,6 @@
-import { 
-  Controller, Get, Post, Body, Param, Put, 
-  UseInterceptors, UploadedFile, BadRequestException, 
+import {
+  Controller, Get, Post, Body, Param, Query,
+  UseInterceptors, UploadedFile, BadRequestException,
   UseGuards,
   Delete
 } from '@nestjs/common';
@@ -12,9 +12,9 @@ import { multerOptions } from 'src/common/multer.config';
 
 @Controller('admin/gallery')
 export class GalleryController {
-  constructor(private readonly galleryService: GalleryService) {}
+  constructor(private readonly galleryService: GalleryService) { }
 
-  @UseGuards(AuthGuard('jwt')) 
+  @UseGuards(AuthGuard('jwt'))
   @Post('upload-photo')
   @UseInterceptors(FileInterceptor('image', multerOptions))
   create(@UploadedFile() file: Express.Multer.File, @Body() createGalleryDto: CreateGalleryDto) {
@@ -22,9 +22,16 @@ export class GalleryController {
     const imagePath = `/uploads/gallery/${file.filename}`;
     return this.galleryService.create(createGalleryDto, imagePath);
   }
+
   @Get()
-  findAll() {
-    return this.galleryService.findAll();
+  findAll(
+    @Query('page') page: string,
+    @Query('limit') limit: string
+  ) {
+    const p = parseInt(page) || 1;
+    const l = parseInt(limit) || 12;
+
+    return this.galleryService.findAll(p, l);
   }
 
   @UseGuards(AuthGuard('jwt'))

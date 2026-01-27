@@ -26,16 +26,16 @@ export class AdminsService {
 
     const updateData: any = { name };
 
-    if (photoPath && photoPath.trim() !== "") { 
+    if (photoPath && photoPath.trim() !== "") {
       if (admin.photo && admin.photo !== 'puskesmasLogo.png') {
         const oldPath = path.join(process.cwd(), 'public/profiles', admin.photo);
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
       }
-      updateData.photo = photoPath; 
+      updateData.photo = photoPath;
     } else {
-      updateData.photo = admin.photo; 
+      updateData.photo = admin.photo;
     }
 
     const updatedAdmin = await this.adminModel
@@ -44,6 +44,5 @@ export class AdminsService {
       .exec();
 
     return updatedAdmin;
-}
-
+  }
 }
