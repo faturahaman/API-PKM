@@ -6,7 +6,7 @@ export const multerOptions = {
   limits: { fileSize: 3 * 1024 * 1024 },
   storage: diskStorage({
     destination: (req, file, cb) => {
-      const uploadPath = join(process.cwd(), 'public','profiles', 'gallery');
+      const uploadPath = join(process.cwd(), 'public','uploads', 'gallery');
 
       if (!existsSync(uploadPath)) {
         mkdirSync(uploadPath, { recursive: true });

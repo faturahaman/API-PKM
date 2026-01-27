@@ -36,7 +36,7 @@ export class AdminsController {
   @UseInterceptors(FileInterceptor('photo', {
     storage: diskStorage({
       destination: (req, file, cb) => {
-        const uploadPath = join(process.cwd(), 'public', 'profiles');
+        const uploadPath = join(process.cwd(), 'public', 'gallery');
         if (!existsSync(uploadPath)) mkdirSync(uploadPath, { recursive: true });
         cb(null, uploadPath);
       },
