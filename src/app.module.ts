@@ -8,6 +8,7 @@ import { ConfigModule } from '@nestjs/config';
 import { GalleryModule } from './gallery/gallery.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { AlbumModule } from './album/album.module';
 
 @Module({
   imports: [
@@ -20,6 +21,8 @@ import { join } from 'path';
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'), 
     }),
+    
+    AlbumModule,
   ],
   controllers: [AppController],
   providers: [AppService],

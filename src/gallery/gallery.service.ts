@@ -54,4 +54,14 @@ export class GalleryService {
 
     return updatedGallery;
   }
+
+
+  // update id album
+async updateAlbumId(photoIds: string[], albumId: string) {
+  return this.galleryModel.updateMany(
+    { _id: { $in: photoIds } },
+    { $set: { album_id: albumId } }
+  ).exec();
+}
+
 }
