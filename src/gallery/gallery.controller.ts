@@ -26,17 +26,26 @@ export class GalleryController {
   @Get()
   findAll(
     @Query('page') page: string,
-    @Query('limit') limit: string
+    @Query('limit') limit: string,
+    @Query('no_album') noAlbum: string,
+    @Query('album_id') albumId: string
   ) {
     const p = parseInt(page) || 1;
     const l = parseInt(limit) || 12;
+    const isNoAlbum = noAlbum === 'true';
 
-    return this.galleryService.findAll(p, l);
+    return this.galleryService.findAll(p, l, isNoAlbum, albumId);
   }
 
   @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.galleryService.remove(id);
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('update-album')
+  updateAlbum(@Body() body: { photo_ids: string[], album_id: string }) {
+    return this.galleryService.updateAlbumId(body.photo_ids, body.album_id);
   }
 }
