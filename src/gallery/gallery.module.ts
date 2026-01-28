@@ -10,5 +10,7 @@ import { Gallery, GallerySchema } from './schemas/gallery.schema';
   ],
   controllers: [GalleryController],
   providers: [GalleryService],
+
+  exports: [GalleryService],
 })
 export class GalleryModule {}
