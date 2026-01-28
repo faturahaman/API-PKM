@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
+import mongoosePaginate from 'mongoose-paginate-v2';
 
 export type GalleryDocument = HydratedDocument<Gallery>;
 
@@ -16,9 +17,10 @@ export class Gallery {
 
   @Prop({ required: false })
   album_id: string;
-
+  
   @Prop({ required: false, default: false })
   is_deleted: boolean;
 }
 
 export const GallerySchema = SchemaFactory.createForClass(Gallery);
+GallerySchema.plugin(mongoosePaginate);
