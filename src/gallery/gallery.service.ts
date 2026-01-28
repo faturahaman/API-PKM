@@ -17,30 +17,6 @@ export class GalleryService {
     return newGallery.save();
   }
 
-  async findAll(page: number = 1, limit: number = 10) {
-    const skip = (page - 1) * limit;
-
-    const [docs, totalDocs] = await Promise.all([
-      this.galleryModel
-        .find({ is_deleted: false })
-        .sort({ upload_date: -1 })
-        .skip(skip)
-        .limit(limit)
-        .exec(),
-      this.galleryModel.countDocuments({ is_deleted: false }),
-    ]);
-
-    return {
-      docs,
-      totalDocs,
-      limit,
-      page,
-      totalPages: Math.ceil(totalDocs / limit),
-      hasNextPage: skip + docs.length < totalDocs,
-      hasPrevPage: page > 1,
-    };
-  }
-
   async remove(id: string) {
     const updatedGallery = await this.galleryModel.findByIdAndUpdate(
       id,
@@ -56,7 +32,6 @@ export class GalleryService {
   }
 
 
-  // update id album
 async updateAlbumId(photoIds: string[], albumId: string) {
   return this.galleryModel.updateMany(
     { _id: { $in: photoIds } },
@@ -64,4 +39,44 @@ async updateAlbumId(photoIds: string[], albumId: string) {
   ).exec();
 }
 
+async findOne(id: string) {
+    return this.galleryModel.findById(id).exec();
+  }
+
+  async findAll(page: number = 1, limit: number = 10, isNoAlbum: boolean = false) {
+    const skip = (page - 1) * limit;
+
+    const filter: any = { is_deleted: false };
+    
+    if (isNoAlbum) {
+        filter.album_id = null;
+    }
+
+    const [docs, totalDocs] = await Promise.all([
+      this.galleryModel
+        .find(filter)
+        .sort({ upload_date: -1 })
+        .skip(skip)
+        .limit(limit)
+        .exec(),
+      this.galleryModel.countDocuments(filter),
+    ]);
+
+    return {
+      docs,
+      totalDocs,
+      limit,
+      page,
+      totalPages: Math.ceil(totalDocs / limit),
+      hasNextPage: skip + docs.length < totalDocs,
+      hasPrevPage: page > 1,
+    };
+  }
+
+async resetAlbumId(albumId: string) {
+    return this.galleryModel.updateMany(
+      { album_id: albumId },   // Cari semua foto yg punya alamat album ini
+      { $set: { album_id: null } } // Hapus alamatnya (jadi null)
+    ).exec();
+  }
 }

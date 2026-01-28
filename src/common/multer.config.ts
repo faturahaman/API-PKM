@@ -25,4 +25,5 @@ export const multerOptions = {
       cb(new Error('Invalid file type, file must be : jpg, jpeg, png'), false);
     }
   },
+  
 };

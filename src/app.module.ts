@@ -9,6 +9,7 @@ import { GalleryModule } from './gallery/gallery.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
 import { AlbumModule } from './album/album.module';
+import { BannerModule } from './banner/banner.module';
 
 @Module({
   imports: [
@@ -23,6 +24,9 @@ import { AlbumModule } from './album/album.module';
     }),
     
     AlbumModule,
+    
+    BannerModule,
+    
   ],
   controllers: [AppController],
   providers: [AppService],

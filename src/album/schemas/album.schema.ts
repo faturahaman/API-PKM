@@ -11,8 +11,9 @@ export class Album {
   @Prop({ required: false })
   description: string;
 
-  @Prop({ required: true })
+  @Prop({ required: false })
   album_cover: string;
+
 }
 
 export const AlbumSchema = SchemaFactory.createForClass(Album);

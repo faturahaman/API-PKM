@@ -26,12 +26,14 @@ export class GalleryController {
   @Get()
   findAll(
     @Query('page') page: string,
-    @Query('limit') limit: string
+    @Query('limit') limit: string,
+    @Query('no_album') noAlbum: string // 👈 Tambah parameter ini
   ) {
     const p = parseInt(page) || 1;
     const l = parseInt(limit) || 12;
+    const isNoAlbum = noAlbum === 'true'; // Convert string to boolean
 
-    return this.galleryService.findAll(p, l);
+    return this.galleryService.findAll(p, l, isNoAlbum);
   }
 
   @UseGuards(AuthGuard('jwt'))

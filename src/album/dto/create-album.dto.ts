@@ -9,7 +9,12 @@ export class CreateAlbumDto {
   @IsString()
   description?: string;
 
-  @IsArray() // 👈 Pastikan ini array
+  // 👇 TAMBAHKAN INI (Supaya error 'Property does not exist' hilang)
+  @IsOptional()
+  @IsString()
+  album_cover?: string;
+
+  @IsArray()
   @IsOptional()
   photo_ids: string[];
 }
