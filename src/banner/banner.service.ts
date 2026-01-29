@@ -15,6 +15,8 @@ export class BannerService {
   // CREATE
   async create(createBannerDto: CreateBannerDto): Promise<Banner> {
     const newBanner = new this.bannerModel(createBannerDto);
+    newBanner.is_deleted = 0;
+    
     return newBanner.save();
   }
 
