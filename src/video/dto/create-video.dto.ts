@@ -1,4 +1,3 @@
-// src/video/dto/create-video.dto.ts
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 import { Transform } from 'class-transformer';
 

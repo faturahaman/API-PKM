@@ -7,7 +7,6 @@ import { FileInterceptor } from '@nestjs/platform-express';
 import { AuthGuard } from '@nestjs/passport';
 import { VideoService } from './video.service';
 import { CreateVideoDto } from './dto/create-video.dto';
-// Pastikan path ini sesuai dengan file config video multer yang tadi kita bahas
 import { videoMulterOptions } from 'src/common/video-multer.config'; 
 
 @Controller('admin/video')
