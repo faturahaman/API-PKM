@@ -1,16 +1,22 @@
-// src/banner/dto/create-banner.dto.ts
 import { IsBoolean, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Transform } from 'class-transformer';
 
 export class CreateBannerDto {
+  // Kita buat optional di validasi, karena path-nya akan di-isi otomatis dari Controller hasil upload
   @IsString()
-  @IsNotEmpty()
-  image_path: string;
+  @IsOptional()
+  image_path?: string;
 
   @IsString()
   @IsOptional()
   description?: string;
 
-  @IsBoolean()
   @IsOptional()
+  @Transform(({ value }) => {
+    if (value === 'true' || value === '1' || value === 1) return true;
+    if (value === 'false' || value === '0' || value === 0) return false;
+    return value;
+  })
+  @IsBoolean()
   is_publish?: boolean;
 }
