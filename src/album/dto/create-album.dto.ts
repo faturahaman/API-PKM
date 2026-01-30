@@ -1,19 +1,21 @@
-import { IsString, IsOptional, IsArray, IsNotEmpty } from 'class-validator';
+// create-album.dto.ts
+import { IsString, IsNotEmpty, IsOptional, IsArray } from 'class-validator';
 
 export class CreateAlbumDto {
-  @IsNotEmpty()
-  @IsString()
-  album_title: string;
+    @IsString()
+    @IsNotEmpty()
+    album_title: string;
 
-  @IsOptional()
-  @IsString()
-  description?: string;
+    @IsOptional()
+    @IsString()
+    description?: string;
 
-  @IsOptional()
-  @IsString()
-  album_cover?: string;
+    // 👇 Tambahkan ini agar tidak error saat diakses (Data.album_cover)
+    @IsOptional()
+    @IsString()
+    album_cover?: string; 
 
-  @IsArray()
-  @IsOptional()
-  photo_ids: string[];
+    @IsOptional()
+    @IsArray()
+    photo_ids?: string[];
 }

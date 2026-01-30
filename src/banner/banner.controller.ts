@@ -1,41 +1,43 @@
 // src/banner/banner.controller.ts
-import { 
-  Controller, Get, Post, Body, Param, Delete, Put, UseGuards 
+import {
+  Controller, Get, Post, Body, Param, Delete, Put, UseGuards
 } from '@nestjs/common';
 import { BannerService } from './banner.service';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
-// Import Guard jika ada (misal JwtAuthGuard)
-// import { JwtAuthGuard } from '../auth/jwt-auth.guard';
+import { AuthGuard } from '@nestjs/passport';
 
-@Controller('admin/banner') // Endpoint: /admin/banner
+
+@Controller('admin/banner')
 export class BannerController {
-  constructor(private readonly bannerService: BannerService) {}
+  constructor(private readonly bannerService: BannerService) { }
 
+  @UseGuards(AuthGuard('jwt'))
   @Post()
-  // @UseGuards(JwtAuthGuard) // Buka komen jika butuh login
   create(@Body() createBannerDto: CreateBannerDto) {
     return this.bannerService.create(createBannerDto);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Get()
   findAll() {
     return this.bannerService.findAll();
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.bannerService.findOne(id);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Put(':id')
-  // @UseGuards(JwtAuthGuard)
   update(@Param('id') id: string, @Body() updateBannerDto: UpdateBannerDto) {
     return this.bannerService.update(id, updateBannerDto);
   }
 
+  @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
-  // @UseGuards(JwtAuthGuard)
   remove(@Param('id') id: string) {
     return this.bannerService.remove(id);
   }

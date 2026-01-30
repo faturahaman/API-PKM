@@ -13,22 +13,23 @@ export class AlbumService {
     private galleryService: GalleryService
   ) { }
 
-  // --- CREATE ---
   async create(createAlbumDto: CreateAlbumDto) {
     const { photo_ids, ...albumData } = createAlbumDto;
 
-    // 1. Logic Auto Cover (Ambil foto pertama yg dipilih)
     let initialCover: string | null = null;
+    
     if (photo_ids && photo_ids.length > 0) {
       const firstPhoto = await this.galleryService.findOne(photo_ids[0]);
-      if (firstPhoto) initialCover = firstPhoto.image;
+      
+      if (firstPhoto && firstPhoto.image) {
+         initialCover = firstPhoto.image;
+      }
     }
 
-    // 2. Buat Album
     const newAlbum = new this.albumModel({
       ...albumData,
       count: photo_ids ? photo_ids.length : 0,
-      album_cover: albumData.album_cover || initialCover,
+      album_cover: albumData.album_cover || initialCover || null, 
     });
 
     const savedAlbum = await newAlbum.save();
@@ -40,25 +41,17 @@ export class AlbumService {
     return savedAlbum;
   }
 
-  // --- FIND ALL ---
   async findAll(page: number = 1, limit: number = 10) {
     return await this.albumModel.paginate({}, { page, limit, sort: { createdAt: -1 } });
   }
 
-  // --- FIND ONE ---
   async findOne(id: string) {
     return this.albumModel.findById(id).exec();
   }
 
-  // --- DELETE (Penting!) ---
   async remove(id: string) {
-    // 1. SEBELUM HAPUS ALBUM -> RESET DULU FOTONYA
-    // "Eh foto-foto, album kalian mau digusur, alamat kalian jadi null ya!"
     await this.galleryService.resetAlbumId(id);
-
-    // 2. BARU HAPUS ALBUMNYA
     const deletedAlbum = await this.albumModel.findByIdAndDelete(id);
-
     if (!deletedAlbum) throw new NotFoundException('Album tidak ditemukan');
     return deletedAlbum;
   }
