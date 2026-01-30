@@ -9,8 +9,9 @@ import { AuthGuard } from '@nestjs/passport';
 export class AlbumController {
   constructor(private readonly albumService: AlbumService) { }
 
+  // ✅ SEBELUMNYA: @Post('create-album') -> SEKARANG: @Post()
   @UseGuards(AuthGuard('jwt'))
-  @Post('create-album')
+  @Post() 
   create(@Body() createAlbumDto: CreateAlbumDto) {
     return this.albumService.create(createAlbumDto);
   }

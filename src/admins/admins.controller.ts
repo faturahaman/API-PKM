@@ -1,13 +1,6 @@
 import {
-  Controller,
-  Get,
-  Put,
-  UseGuards,
-  Request,
-  UseInterceptors,
-  UploadedFile,
-  BadRequestException,
-  Body
+  Controller, Get, Put, UseGuards, Request, UseInterceptors,
+  UploadedFile, Body
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -29,10 +22,11 @@ export class AdminsController {
 
   @Get('dashboard')
   getDashboard(@Request() req: any) {
-    return req.user;
+    return req.user; // Atau logic dashboard lain
   }
 
-  @Put('update-profile')
+  // ✅ SEBELUMNYA: @Put('update-profile') -> SEKARANG: @Put('profile')
+  @Put('profile') 
   @UseInterceptors(FileInterceptor('photo', {
     storage: diskStorage({
       destination: (req, file, cb) => {
@@ -46,7 +40,6 @@ export class AdminsController {
         cb(null, filename);
       },
     }),
-
     limits: { fileSize: 2 * 1024 * 1024 },
   }))
   async updateProfile(
@@ -55,9 +48,7 @@ export class AdminsController {
     @UploadedFile() file?: Express.Multer.File
   ) {
     const adminId = req.user._id;
-
     const photoPath = file ? file.filename : undefined;
-
     return this.adminsService.updateProfile(adminId, photoPath, body.name);
   }
 }

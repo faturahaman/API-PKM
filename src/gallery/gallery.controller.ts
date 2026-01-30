@@ -1,8 +1,7 @@
 import {
   Controller, Get, Post, Body, Param, Query,
   UseInterceptors, UploadedFile, BadRequestException,
-  UseGuards,
-  Delete
+  UseGuards, Delete, Put
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -15,7 +14,7 @@ export class GalleryController {
   constructor(private readonly galleryService: GalleryService) { }
 
   @UseGuards(AuthGuard('jwt'))
-  @Post('upload-photo')
+  @Post() 
   @UseInterceptors(FileInterceptor('image', multerOptions))
   create(@UploadedFile() file: Express.Multer.File, @Body() createGalleryDto: CreateGalleryDto) {
     if (!file) throw new BadRequestException('File gambar wajib diupload!');
@@ -44,7 +43,7 @@ export class GalleryController {
   }
 
   @UseGuards(AuthGuard('jwt'))
-  @Post('update-album')
+  @Put('album') 
   updateAlbum(@Body() body: { photo_ids: string[], album_id: string }) {
     return this.galleryService.updateAlbumId(body.photo_ids, body.album_id);
   }

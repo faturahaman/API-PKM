@@ -14,7 +14,7 @@ export class VideoController {
   constructor(private readonly videoService: VideoService) {}
 
   @UseGuards(AuthGuard('jwt'))
-  @Post('create')
+  @Post() 
   @UseInterceptors(FileInterceptor('video_file', videoMulterOptions))
   create(
     @UploadedFile() file: Express.Multer.File, 
@@ -22,6 +22,7 @@ export class VideoController {
   ) {
     return this.videoService.create(createVideoDto, file);
   }
+
   @UseGuards(AuthGuard('jwt'))
   @Get()
   findAll(
