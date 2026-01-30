@@ -4,6 +4,8 @@ import { Model } from 'mongoose';
 import { Banner, BannerDocument } from './schemas/banner.schema';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
+import * as fs from 'fs';
+import * as path from 'path'; 
 
 @Injectable()
 export class BannerService {
@@ -11,10 +13,13 @@ export class BannerService {
     @InjectModel(Banner.name) private bannerModel: Model<BannerDocument>,
   ) {}
 
-  
-  async create(createBannerDto: CreateBannerDto): Promise<Banner> {
-    const newBanner = new this.bannerModel(createBannerDto);
-    newBanner.is_deleted = 0;
+  // TERIMA FILE DISINI
+  async create(createBannerDto: CreateBannerDto, file: Express.Multer.File): Promise<Banner> {
+    const newBanner = new this.bannerModel({
+      ...createBannerDto,
+      image_path: `/uploads/banner/${file.filename}`, // Simpan path otomatis
+      is_deleted: 0,
+    });
 
     return newBanner.save();
   }
@@ -38,11 +43,20 @@ export class BannerService {
     return banner;
   }
 
-  async update(id: string, updateBannerDto: UpdateBannerDto): Promise<Banner> {
+  // UPDATE HANDLE GAMBAR BARU (JIKA ADA)
+  async update(id: string, updateBannerDto: UpdateBannerDto, file?: Express.Multer.File): Promise<Banner> {
+    let updateData = { ...updateBannerDto };
+
+    // Jika user upload gambar baru, update path-nya
+    if (file) {
+      updateData.image_path = `/uploads/banner/${file.filename}`;
+      // (Optional) Logic hapus gambar lama bisa ditaruh disini kalau mau hemat storage
+    }
+
     const updatedBanner = await this.bannerModel
       .findOneAndUpdate(
         { _id: id, is_deleted: 0 },
-        { $set: updateBannerDto },
+        { $set: updateData },
         { new: true },
       )
       .exec();
@@ -53,17 +67,18 @@ export class BannerService {
     return updatedBanner;
   }
 
-  async updateStatus(id: string, status: number): Promise<Banner> {
+  // FIX: GANTI 'status' JADI 'is_publish'
+  async updateStatus(id: string, isPublish: boolean): Promise<Banner> {
     const updatedBanner = await this.bannerModel
       .findOneAndUpdate(
         { _id: id, is_deleted: 0 },
-        { $set: { status: status } },
+        { $set: { is_publish: isPublish } }, // ✅ Fixed
         { new: true },
       )
       .exec();
 
     if (!updatedBanner) {
-      throw new NotFoundException(`Banner tidak ditemukan atau sudah dihapus`);
+      throw new NotFoundException(`Banner tidak ditemukan`);
     }
     return updatedBanner;
   }
