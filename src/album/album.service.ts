@@ -33,7 +33,6 @@ export class AlbumService {
 
     const savedAlbum = await newAlbum.save();
 
-    // 3. Masukin Foto ke Album (Kasih Alamat)
     if (photo_ids && photo_ids.length > 0) {
       await this.galleryService.updateAlbumId(photo_ids, savedAlbum._id.toString());
     }
@@ -62,5 +61,17 @@ export class AlbumService {
 
     if (!deletedAlbum) throw new NotFoundException('Album tidak ditemukan');
     return deletedAlbum;
+  }
+
+  // --- UPDATE ---
+  async update(id: string, updateData: Partial<Album>) {
+    const updatedAlbum = await this.albumModel.findByIdAndUpdate(
+      id,
+      { $set: updateData },
+      { new: true }
+    );
+
+    if (!updatedAlbum) throw new NotFoundException('Album tidak ditemukan');
+    return updatedAlbum;
   }
 }
