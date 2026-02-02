@@ -11,6 +11,7 @@ import { join } from 'path';
 import { AlbumModule } from './album/album.module';
 import { BannerModule } from './banner/banner.module';
 import { VideoModule } from './video/video.module';
+import { AgendaModule } from './agenda/agenda.module';
 
 @Module({
   imports: [
@@ -29,6 +30,8 @@ import { VideoModule } from './video/video.module';
     BannerModule,
     
     VideoModule,
+    
+    AgendaModule,
     
   ],
   controllers: [AppController],
