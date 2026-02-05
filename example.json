@@ -1,0 +1,174 @@
+{
+  "auth": {
+    "login": {
+      "method": "POST",
+      "endpoint": "/auth/login",
+      "body": {
+        "name": "admin_username",
+        "password": "password123"
+      }
+    },
+    "logout": {
+      "method": "POST",
+      "endpoint": "/auth/logout",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      }
+    }
+  },
+  "admin": {
+    "update_profile": {
+      "method": "PUT",
+      "endpoint": "/admin/profile",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      },
+      "body_type": "multipart/form-data",
+      "body": {
+        "name": "Nama Admin Baru",
+        "photo": "(file image)"
+      }
+    },
+    "get_profile": {
+      "method": "GET",
+      "endpoint": "/admin/profile",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      }
+    }
+  },
+  "agenda": {
+    "create": {
+      "method": "POST",
+      "endpoint": "/admin/agenda",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      },
+      "body": {
+        "activity_name": "Rapat Koordinasi Bulanan",
+        "date": "2024-02-10",
+        "time": "09:00 - 12:00",
+        "location": "Ruang Rapat Utama",
+        "effective_date": "2024-02-11"
+      }
+    },
+    "list": {
+      "method": "GET",
+      "endpoint": "/admin/agenda?page=1&limit=10"
+    }
+  },
+  "news": {
+    "create": {
+      "method": "POST",
+      "endpoint": "/admin/news",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      },
+      "body_type": "multipart/form-data",
+      "body": {
+        "username": "admin",
+        "title": "Peluncuran Fitur Baru",
+        "content": "<p>Ini adalah konten berita yang support HTML.</p>",
+        "day": "Senin",
+        "date": "2024-02-05",
+        "clock": "08:00",
+        "image": "(file image)"
+      }
+    }
+  },
+  "album": {
+    "create": {
+      "method": "POST",
+      "endpoint": "/admin/album",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      },
+      "body": {
+        "album_title": "Kegiatan Vaksinasi",
+        "description": "Dokumentasi kegiatan vaksinasi massal.",
+        "album_cover": "optional_string_path",
+        "photo_ids": []
+      }
+    }
+  },
+  "gallery": {
+    "create": {
+      "method": "POST",
+      "endpoint": "/admin/gallery",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      },
+      "body_type": "multipart/form-data",
+      "body": {
+        "image_title": "Suasana Pendaftaran",
+        "description": "Antrean warga mendaftar.",
+        "album_id": "67a30...", 
+        "image": "(file image)"
+      }
+    }
+  },
+  "banner": {
+    "create": {
+      "method": "POST",
+      "endpoint": "/admin/banner",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      },
+      "body_type": "multipart/form-data",
+      "body": {
+        "description": "Banner Welcome",
+        "is_publish": "true",
+        "image": "(file image)"
+      }
+    }
+  },
+  "video": {
+    "create_upload": {
+      "method": "POST",
+      "endpoint": "/admin/video",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      },
+      "body_type": "multipart/form-data",
+      "body": {
+        "video_title": "Video Profil",
+        "video_desc": "Deskripsi video...",
+        "is_embed": "false",
+        "video_file": "(file video .mp4)"
+      }
+    },
+    "create_embed": {
+      "method": "POST",
+      "endpoint": "/admin/video",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      },
+      "body_type": "multipart/form-data",
+      "body": {
+        "video_title": "Video Profil Youtube",
+        "video_desc": "Deskripsi video...",
+        "is_embed": "true",
+        "embed_url": "https://youtube.com/watch?v=..."
+      }
+    }
+  },
+  "reviews": {
+    "create_public": {
+      "method": "POST",
+      "endpoint": "/reviews",
+      "body": {
+        "username": "User123",
+        "message": "Pelayanan sangat memuaskan!",
+        "category": "Pelayanan"
+      },
+      "note": "Kategori: 'Pelayanan', 'Fasilitas', 'Tenaga Medis', 'Lainnya'"
+    },
+    "list_admin": {
+      "method": "GET",
+      "endpoint": "/reviews/admin?page=1&limit=10&category=Pelayanan",
+      "headers": {
+        "Authorization": "Bearer {{access_token}}"
+      }
+    }
+  }
+}

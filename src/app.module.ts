@@ -12,6 +12,7 @@ import { AlbumModule } from './album/album.module';
 import { BannerModule } from './banner/banner.module';
 import { VideoModule } from './video/video.module';
 import { AgendaModule } from './agenda/agenda.module';
+import { ReviewsModule } from './reviews/reviews.module';
 
 @Module({
   imports: [
@@ -32,6 +33,10 @@ import { AgendaModule } from './agenda/agenda.module';
     VideoModule,
     
     AgendaModule,
+    
+    ReviewsModule,
+    
+      
     
   ],
   controllers: [AppController],
