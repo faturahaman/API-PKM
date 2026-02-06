@@ -5,12 +5,11 @@ import { AlbumService } from './album.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { AuthGuard } from '@nestjs/passport';
 
-@Controller('admin/album')
-export class AlbumController {
+@UseGuards(AuthGuard('jwt')) // Guard level clas  
+@Controller('admin/album')   // Endpoint: /api/v1/admin/album
+export class AlbumAdminController {
   constructor(private readonly albumService: AlbumService) { }
 
-  // ✅ SEBELUMNYA: @Post('create-album') -> SEKARANG: @Post()
-  @UseGuards(AuthGuard('jwt'))
   @Post() 
   create(@Body() createAlbumDto: CreateAlbumDto) {
     return this.albumService.create(createAlbumDto);
@@ -33,15 +32,14 @@ export class AlbumController {
     return album;
   }
 
-  @UseGuards(AuthGuard('jwt'))
+  @Put(':id')
+  update(@Param('id') id: string, @Body() updateData: any) {
+    // Idealnya ganti 'any' dengan UpdateAlbumDto
+    return this.albumService.update(id, updateData);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.albumService.remove(id);
-  }
-
-  @UseGuards(AuthGuard('jwt'))
-  @Put(':id')
-  update(@Param('id') id: string, @Body() updateData: any) {
-    return this.albumService.update(id, updateData);
   }
 }

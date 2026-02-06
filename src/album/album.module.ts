@@ -1,16 +1,17 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AlbumController } from './album.controller';
 import { AlbumService } from './album.service';
+import { AlbumAdminController } from './album.admin.controller'; // Import baru
+import { AlbumPublicController } from './album.public.controller'; // Import baru
 import { Album, AlbumSchema } from './schemas/album.schema';
-import { GalleryModule } from 'src/gallery/gallery.module'; // 👈 Import ini
+import { GalleryModule } from '../gallery/gallery.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Album.name, schema: AlbumSchema }]),
-    GalleryModule, // 👈 Masukkan disini supaya AlbumService bisa pake GalleryService
+    GalleryModule, // Import GalleryModule untuk akses GalleryService
   ],
-  controllers: [AlbumController],
+  controllers: [AlbumAdminController, AlbumPublicController], // Register keduanya
   providers: [AlbumService],
 })
-export class AlbumModule {}
+export class AlbumModule { }

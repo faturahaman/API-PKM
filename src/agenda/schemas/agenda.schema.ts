@@ -24,6 +24,8 @@ export class Agenda {
 
   @Prop({ default: false })
   is_deleted: boolean;
+
+  timestamp: true;
 }
 
 export const AgendaSchema = SchemaFactory.createForClass(Agenda);

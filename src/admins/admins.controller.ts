@@ -4,10 +4,8 @@ import {
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
-import { extname, join } from 'path';
-import { existsSync, mkdirSync } from 'fs';
 import { AdminsService } from './admins.service';
+import { createMulterOptions } from '../common/multer.utils';
 
 @Controller('admin')
 @UseGuards(AuthGuard('jwt'))
@@ -25,30 +23,15 @@ export class AdminsController {
     return req.user; // Atau logic dashboard lain
   }
 
-  // ✅ SEBELUMNYA: @Put('update-profile') -> SEKARANG: @Put('profile')
-  @Put('profile') 
-  @UseInterceptors(FileInterceptor('photo', {
-    storage: diskStorage({
-      destination: (req, file, cb) => {
-        const uploadPath = join(process.cwd(), 'public', 'profiles');
-        if (!existsSync(uploadPath)) mkdirSync(uploadPath, { recursive: true });
-        cb(null, uploadPath);
-      },
-      filename: (req, file, cb) => {
-        const ext = extname(file.originalname);
-        const filename = `admin-${Date.now()}${ext}`;
-        cb(null, filename);
-      },
-    }),
-    limits: { fileSize: 2 * 1024 * 1024 },
-  }))
+  @Put('profile')
+  @UseInterceptors(FileInterceptor('photo', createMulterOptions('profile')))
   async updateProfile(
     @Request() req: any,
     @Body() body: { name: string },
     @UploadedFile() file?: Express.Multer.File
   ) {
     const adminId = req.user._id;
-    const photoPath = file ? file.filename : undefined;
+    const photoPath = file ? `/uploads/profiles/${file.filename}` : undefined;
     return this.adminsService.updateProfile(adminId, photoPath, body.name);
   }
 }

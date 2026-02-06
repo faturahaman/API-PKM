@@ -1,24 +1,17 @@
 import { 
-  Controller, Get, Post, Body, Param, Put, Query, UseGuards 
+  Controller, Get, Body, Param, Put, Query, UseGuards 
 } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
-import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewStatusDto } from './dto/update-review.dto';
 import { AuthGuard } from '@nestjs/passport';
 
-@Controller('reviews') // Base URL
-export class ReviewsController {
+@UseGuards(AuthGuard('jwt')) // Guard Global untuk Class ini
+@Controller('admin/reviews') // Endpoint: /api/v1/admin/reviews
+export class ReviewsAdminController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  // 1. Submit Review (Public - Gak perlu Login)
-  @Post()
-  create(@Body() createReviewDto: CreateReviewDto) {
-    return this.reviewsService.create(createReviewDto);
-  }
-
-  // 2. List Review (Admin Only - Butuh Token)
-  @UseGuards(AuthGuard('jwt'))
-  @Get('admin')
+  // List Semua Review (Termasuk yang belum publish)
+  @Get()
   findAll(
     @Query('page') page: string,
     @Query('limit') limit: string,
@@ -29,13 +22,12 @@ export class ReviewsController {
     return this.reviewsService.findAll(p, l, category);
   }
 
-  @UseGuards(AuthGuard('jwt'))
-  @Put('admin/:id/status')
+  // Update Status Publish/Unpublish
+  @Put(':id/status')
   updateStatus(
     @Param('id') id: string, 
     @Body() updateDto: UpdateReviewStatusDto
   ) {
     return this.reviewsService.updateStatus(id, updateDto);
   }
-
 }

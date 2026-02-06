@@ -6,11 +6,11 @@ import { CreateAgendaDto } from './dto/create-agenda.dto';
 import { UpdateAgendaDto } from './dto/update-agenda.dto';
 import { AuthGuard } from '@nestjs/passport';
 
-@Controller('admin/agenda') // Prefix URL
-export class AgendaController {
+@UseGuards(AuthGuard('jwt'))
+@Controller('admin/agenda')
+export class AgendaAdminController {
   constructor(private readonly agendaService: AgendaService) {}
 
-  @UseGuards(AuthGuard('jwt'))
   @Post()
   create(@Body() createAgendaDto: CreateAgendaDto) {
     return this.agendaService.create(createAgendaDto);
@@ -31,13 +31,11 @@ export class AgendaController {
     return this.agendaService.findOne(id);
   }
 
-  @UseGuards(AuthGuard('jwt'))
   @Put(':id')
   update(@Param('id') id: string, @Body() updateData: UpdateAgendaDto) {
     return this.agendaService.update(id, updateData);
   }
 
-  @UseGuards(AuthGuard('jwt'))
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.agendaService.remove(id);

@@ -4,16 +4,27 @@ import { News } from './schemas/news.schema';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
 import type { PaginateModel } from 'mongoose';
+import sanitizeHtml from 'sanitize-html';
 
 @Injectable()
 export class NewsService {
   constructor(
     @InjectModel(News.name) private newsModel: PaginateModel<News>,
-  ) {}
+  ) { }
 
   async create(createNewsDto: CreateNewsDto, imagePath: string) {
+    // Security: XSS Sanitization
+    const cleanContent = sanitizeHtml(createNewsDto.content, {
+      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2']),
+      allowedAttributes: {
+        ...sanitizeHtml.defaults.allowedAttributes,
+        'img': ['src', 'alt']
+      }
+    });
+
     const newNews = new this.newsModel({
       ...createNewsDto,
+      content: cleanContent, // Simpan content bersih
       image: imagePath,
       is_deleted: false,
     });
@@ -28,9 +39,9 @@ export class NewsService {
       filter.title = { $regex: search, $options: 'i' };
     }
 
-    return await this.newsModel.paginate(filter, { 
-      page, 
-      limit, 
+    return await this.newsModel.paginate(filter, {
+      page,
+      limit,
       sort: { date: -1 } // Berita terbaru (berdasarkan tanggal input) di atas
     });
   }
@@ -43,7 +54,7 @@ export class NewsService {
 
   async update(id: string, updateNewsDto: UpdateNewsDto, imagePath?: string) {
     const updateData: any = { ...updateNewsDto };
-    
+
     // Jika ada gambar baru diupload, update path-nya
     if (imagePath) {
       updateData.image = imagePath;
@@ -65,7 +76,7 @@ export class NewsService {
       { is_deleted: true },
       { new: true }
     );
-    
+
     if (!deletedNews) throw new NotFoundException('Berita tidak ditemukan');
     return deletedNews;
   }

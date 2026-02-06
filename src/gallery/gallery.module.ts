@@ -1,7 +1,8 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { GalleryService } from './gallery.service';
-import { GalleryController } from './gallery.controller';
+import { GalleryController } from './gallery.public.controller';
+import { GalleryAdminController } from './gallery.admin.controller';
 import { Gallery, GallerySchema } from './schemas/gallery.schema';
 import { Album, AlbumSchema } from '../album/schemas/album.schema';
 
@@ -12,7 +13,7 @@ import { Album, AlbumSchema } from '../album/schemas/album.schema';
       { name: Album.name, schema: AlbumSchema },
     ]),
   ],
-  controllers: [GalleryController],
+  controllers: [GalleryController, GalleryAdminController],
   providers: [GalleryService],
 
   exports: [GalleryService],
