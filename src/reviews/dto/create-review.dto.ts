@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsString, IsOptional, IsEnum } from 'class-validator';
-import { ReviewCategory } from '../schemas/review.schema';
+import { ReviewCategory } from '../schemas/review.entity';
 
 export class CreateReviewDto {
   @IsOptional()

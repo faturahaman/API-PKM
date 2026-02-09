@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { NewsService } from './news.service';
 import { NewsAdminController } from './news.admin.controller';
 import { NewsPublicController } from './news.public.controller';
-import { News, NewsSchema } from './schemas/news.schema';
+import { News } from './schemas/news.entity';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: News.name, schema: NewsSchema }]),
-  ],
+  imports: [TypeOrmModule.forFeature([News])],
   controllers: [NewsAdminController, NewsPublicController],
   providers: [NewsService],
 })
-export class NewsModule {}
+export class NewsModule { }

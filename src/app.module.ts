@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { AdminsModule } from './admins/admins.module';
 import { ConfigModule } from '@nestjs/config';
@@ -13,31 +13,45 @@ import { BannerModule } from './banner/banner.module';
 import { VideoModule } from './video/video.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { ReviewsModule } from './reviews/reviews.module';
+import { NewsModule } from './news/news.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
-    MongooseModule.forRoot('mongodb://127.0.0.1:27017/pkm-api'),
+    TypeOrmModule.forRootAsync({
+      useFactory: () => ({
+        type: 'mysql',
+        host: process.env.DB_HOST,
+        port: parseInt(process.env.DB_PORT || '3306'),
+        username: process.env.DB_USERNAME,
+        password: process.env.DB_PASSWORD,
+        database: process.env.DB_DATABASE,
+        autoLoadEntities: true,
+        synchronize: true, // TODO: false di production
+      }),
+    }),
+
     AdminsModule,
     AuthModule,
     GalleryModule,
-    
+
     ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'public'), 
+      rootPath: join(process.cwd(), 'public'),
     }),
-    
+
     AlbumModule,
-    
+
     BannerModule,
-    
+
     VideoModule,
-    
+
     AgendaModule,
-    
+
     ReviewsModule,
-    
-      
-    
+
+    NewsModule,
+
+
   ],
   controllers: [AppController],
   providers: [AppService],

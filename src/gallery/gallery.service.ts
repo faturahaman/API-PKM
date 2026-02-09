@@ -1,107 +1,112 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Gallery } from './schemas/gallery.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository, IsNull } from 'typeorm';
+import { Gallery } from './schemas/gallery.entity';
+import { Album } from '../album/schemas/album.entity';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
-import type { Model, PaginateModel } from 'mongoose';
-import { Album, AlbumDocument } from '../album/schemas/album.schema';
 
 @Injectable()
 export class GalleryService {
   constructor(
-    @InjectModel(Gallery.name)
-    private galleryModel: PaginateModel<Gallery>,
-    @InjectModel(Album.name) private albumModel: Model<AlbumDocument>
+    @InjectRepository(Gallery)
+    private galleryRepository: Repository<Gallery>,
+    @InjectRepository(Album)
+    private albumRepository: Repository<Album>
   ) { }
 
   async create(createGalleryDto: CreateGalleryDto, imagePath: string) {
-    const newGallery = new this.galleryModel({
+    const newGallery = this.galleryRepository.create({
       ...createGalleryDto,
       image: imagePath,
       is_deleted: false,
     });
-    return newGallery.save();
+    return this.galleryRepository.save(newGallery);
   }
 
   async findAll(page: number = 1, limit: number = 10, isNoAlbum: boolean = false, albumId?: string) {
-    const filter: any = { is_deleted: false };
+    const skip = (page - 1) * limit;
+
+    const where: any = { is_deleted: false };
 
     if (isNoAlbum) {
-      filter.album_id = null;
+      where.album_id = IsNull();
     } else if (albumId) {
-      filter.album_id = albumId;
+      where.album_id = albumId;
     }
 
-    return await this.galleryModel.paginate(filter, { page, limit, sort: { upload_date: -1 } });
+    const [data, total] = await this.galleryRepository.findAndCount({
+      where,
+      skip,
+      take: limit,
+      order: { upload_date: 'DESC' },
+    });
+
+    return {
+      docs: data,
+      totalDocs: total,
+      limit,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {
-    return this.galleryModel.findById(id).exec();
+    return this.galleryRepository.findOne({ where: { id } });
   }
 
-  // 🔥 PERBAIKAN UTAMA ADA DI SINI
   async remove(id: string) {
-    // 1. Cari dulu datanya sebelum dihapus (kita butuh album_id nya)
-    const galleryToDelete = await this.galleryModel.findById(id);
-    
+    const galleryToDelete = await this.galleryRepository.findOne({ where: { id } });
+
     if (!galleryToDelete) {
       throw new NotFoundException('Data tidak ditemukan');
     }
 
-    // 2. Soft Delete (Set is_deleted = true)
-    // Kita set album_id jadi null juga supaya tidak terhitung lagi (opsional, tapi lebih bersih)
     galleryToDelete.is_deleted = true;
-    
-    // Simpan album_id lama untuk proses sinkronisasi
-    const oldAlbumId = galleryToDelete.album_id; 
-    
-    // Hapus referensi album di foto yang dihapus (opsional, sesuaikan kebutuhan)
-    // galleryToDelete.album_id = null; 
+    const oldAlbumId = galleryToDelete.album_id;
 
-    await galleryToDelete.save();
+    await this.galleryRepository.save(galleryToDelete);
 
-    // 3. JIKA FOTO INI PUNYA ALBUM, KITA WAJIB SYNC ALBUMNYA
     if (oldAlbumId) {
-       await this.syncAlbumData(String(oldAlbumId));
+      await this.syncAlbumData(String(oldAlbumId));
     }
 
     return galleryToDelete;
   }
 
   async updateAlbumId(photoIds: string[], albumId: string) {
-    await this.galleryModel.updateMany(
-      { _id: { $in: photoIds } },
-      { $set: { album_id: albumId } }
-    ).exec();
+    await this.galleryRepository.createQueryBuilder()
+      .update(Gallery)
+      .set({ album_id: albumId })
+      .whereInIds(photoIds)
+      .execute();
 
-    // Panggil fungsi sync yang lebih rapi
     await this.syncAlbumData(albumId);
 
     return { success: true };
   }
 
   async resetAlbumId(albumId: string) {
-    return this.galleryModel.updateMany(
+    return this.galleryRepository.update(
       { album_id: albumId },
-      { $set: { album_id: null } }
-    ).exec();
+      { album_id: null } as any
+    );
   }
 
   private async syncAlbumData(albumId: string) {
-    const totalPhotos = await this.galleryModel.countDocuments({ 
-        album_id: albumId, 
-        is_deleted: false 
+    const totalPhotos = await this.galleryRepository.count({
+      where: { album_id: albumId, is_deleted: false }
     });
 
-    const latestPhoto = await this.galleryModel.findOne({ 
-        album_id: albumId, 
-        is_deleted: false 
-    }).sort({ upload_date: -1 });
+    const latestPhoto = await this.galleryRepository.findOne({
+      where: { album_id: albumId, is_deleted: false },
+      order: { upload_date: 'DESC' }
+    });
 
     const newCover = latestPhoto ? latestPhoto.image : null;
 
-    await this.albumModel.findByIdAndUpdate(albumId, { 
-        count: totalPhotos,
-        album_cover: newCover
+    await this.albumRepository.update(albumId, {
+      count: totalPhotos,
+      album_cover: newCover || undefined
     });
   }
 }

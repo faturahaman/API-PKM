@@ -1,15 +1,13 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { ReviewsService } from './reviews.service';
-import { ReviewsAdminController } from './reviews.admin.controller'; 
+import { ReviewsAdminController } from './reviews.admin.controller';
 import { ReviewsPublicController } from './reviews.public.controller';
-import { Review, ReviewSchema } from './schemas/review.schema';
+import { Review } from './schemas/review.entity';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Review.name, schema: ReviewSchema }]),
-  ],
-  controllers: [ReviewsAdminController, ReviewsPublicController], 
+  imports: [TypeOrmModule.forFeature([Review])],
+  controllers: [ReviewsAdminController, ReviewsPublicController],
   providers: [ReviewsService],
 })
-export class ReviewsModule {}
+export class ReviewsModule { }

@@ -1,21 +1,17 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { GalleryService } from './gallery.service';
-import { GalleryController } from './gallery.public.controller';
 import { GalleryAdminController } from './gallery.admin.controller';
-import { Gallery, GallerySchema } from './schemas/gallery.schema';
-import { Album, AlbumSchema } from '../album/schemas/album.schema';
+import { GalleryPublicController } from './gallery.public.controller';
+import { Gallery } from './schemas/gallery.entity';
+import { Album } from '../album/schemas/album.entity';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: Gallery.name, schema: GallerySchema },
-      { name: Album.name, schema: AlbumSchema },
-    ]),
+    TypeOrmModule.forFeature([Gallery, Album]),
   ],
-  controllers: [GalleryController, GalleryAdminController],
+  controllers: [GalleryAdminController, GalleryPublicController],
   providers: [GalleryService],
-
   exports: [GalleryService],
 })
-export class GalleryModule {}
+export class GalleryModule { }

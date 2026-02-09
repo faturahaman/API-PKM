@@ -1,31 +1,34 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Admin, AdminDocument } from './schemas/admin.schemas';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Admin } from './schemas/admin.entity';
 import * as fs from 'fs';
 import * as path from 'path';
+import { UpdateAdminDto } from './dto/update-admin.dto';
 
 @Injectable()
 export class AdminsService {
-  constructor(@InjectModel(Admin.name) private adminModel: Model<AdminDocument>) { }
+  constructor(
+    @InjectRepository(Admin)
+    private adminRepository: Repository<Admin>,
+  ) { }
 
-  async findOneByName(name: string): Promise<AdminDocument | null> {
-    return this.adminModel.findOne({ name }).exec();
+  async findOneByName(name: string): Promise<Admin | null> {
+    return this.adminRepository.findOne({ where: { name } });
   }
 
-  async findOne(id: string): Promise<AdminDocument | null> {
-    return this.adminModel.findById(id).select('-password').exec();
+  async findOne(id: string): Promise<Admin | null> {
+    return this.adminRepository.findOne({ where: { id } });
   }
 
-  async updateProfile(id: string, photoPath: string | undefined, name: string): Promise<AdminDocument | null> {
-    const admin = await this.adminModel.findById(id);
+  async updateProfile(id: string, photoPath: string | undefined, name: string): Promise<Admin> {
+    const admin = await this.findOne(id);
 
     if (!admin) {
       throw new NotFoundException('Admin tidak ditemukan');
     }
 
-    const updateData: any = { name };
-
+    // Handle photo deletion if new photo is uploaded
     if (photoPath && photoPath.trim() !== "") {
       if (admin.photo && admin.photo !== 'puskesmasLogo.png') {
         const oldPath = path.join(process.cwd(), 'public/profiles', admin.photo);
@@ -33,16 +36,10 @@ export class AdminsService {
           fs.unlinkSync(oldPath);
         }
       }
-      updateData.photo = photoPath;
-    } else {
-      updateData.photo = admin.photo;
+      admin.photo = photoPath;
     }
 
-    const updatedAdmin = await this.adminModel
-      .findByIdAndUpdate(id, updateData, { new: true })
-      .select('-password')
-      .exec();
-
-    return updatedAdmin;
+    admin.name = name;
+    return this.adminRepository.save(admin);
   }
 }

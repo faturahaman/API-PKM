@@ -1,40 +1,41 @@
-import { Injectable, BadRequestException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import type { PaginateModel } from 'mongoose';
-import { Video, VideoDocument } from './schemas/video.schema';
+import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Video } from './schemas/video.entity';
 import { CreateVideoDto } from './dto/create-video.dto';
 
 @Injectable()
 export class VideoService {
   constructor(
-    @InjectModel(Video.name) private videoModel: PaginateModel<VideoDocument>,
-  ) {}
-
-
+    @InjectRepository(Video)
+    private videoRepository: Repository<Video>,
+  ) { }
 
   async create(createVideoDto: CreateVideoDto, file?: Express.Multer.File) {
-    const { is_embed, embed_url, video_title, ...videoData } = createVideoDto;
-    
+    const { is_embed, ...videoData } = createVideoDto;
+
+    // Konversi is_embed ke boolean
     const isEmbedBoolean = String(is_embed) === '1' || String(is_embed) === 'true';
-    if (video_title) {
-      const existingVideo = await this.videoModel.findOne({ video_title }).exec();
+
+    // Cek duplikasi judul
+    if (createVideoDto.video_title) {
+      const existingVideo = await this.videoRepository.findOne({ where: { video_title: createVideoDto.video_title } });
       if (existingVideo) {
         throw new BadRequestException('Video dengan judul tersebut sudah ada!');
       }
     }
 
-    console.log(`Input: ${is_embed} | Hasil Convert: ${isEmbedBoolean}`);
-
     let finalDataString = '';
 
-    if (isEmbedBoolean) { 
-      if (!embed_url) {
+    if (isEmbedBoolean) {
+      // Jika embed, ambil dari DTO param embed_url
+      if (!createVideoDto.embed_url) {
         throw new BadRequestException('Jika tipe embed, URL wajib diisi!');
       }
-      if (!this.isValidUrl(embed_url)) {
+      if (!this.isValidUrl(createVideoDto.embed_url)) {
         throw new BadRequestException('URL Video tidak valid!');
       }
-      finalDataString = embed_url;
+      finalDataString = createVideoDto.embed_url;
 
     } else {
       if (!file) {
@@ -43,26 +44,42 @@ export class VideoService {
       finalDataString = `/uploads/video/${file.filename}`;
     }
 
-    const newVideo = new this.videoModel({
-      ...videoData,        
-      video_title,         
+    const newVideo = this.videoRepository.create({
+      ...videoData,
+      video_title: createVideoDto.video_title,
       is_embed: isEmbedBoolean,
       data: finalDataString,
       is_deleted: false
     });
 
-    return newVideo.save();
+    return this.videoRepository.save(newVideo);
   }
 
   async findAll(page: number = 1, limit: number = 10) {
-    return this.videoModel.paginate(
-      { is_deleted: false },
-      { page, limit, sort: { upload_date: -1 } }
-    );
+    const skip = (page - 1) * limit;
+    const [data, total] = await this.videoRepository.findAndCount({
+      where: { is_deleted: false },
+      skip,
+      take: limit,
+      order: { created_at: 'DESC' },
+    });
+
+    return {
+      docs: data,
+      totalDocs: total,
+      limit,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async remove(id: string) {
-    return this.videoModel.findByIdAndUpdate(id, { is_deleted: true }, { new: true });
+    const video = await this.videoRepository.findOne({ where: { id } });
+    if (!video) {
+      throw new NotFoundException('Video tidak ditemukan');
+    }
+    video.is_deleted = true;
+    return this.videoRepository.save(video);
   }
 
   private isValidUrl(urlString: string): boolean {

@@ -1,15 +1,14 @@
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { VideoService } from './video.service';
-import { VideoAdminController } from './video.admin.controller'; 
-import { VideoPublicController } from './video.public.controller'; 
-import { Video, VideoSchema } from './schemas/video.schema';
+import { VideoAdminController } from './video.admin.controller';
+import { VideoPublicController } from './video.public.controller';
+import { Video } from './schemas/video.entity';
 
 @Module({
-  imports: [
-    MongooseModule.forFeature([{ name: Video.name, schema: VideoSchema }]),
-  ],
-  controllers: [VideoAdminController, VideoPublicController], 
+  imports: [TypeOrmModule.forFeature([Video])],
+  controllers: [VideoAdminController, VideoPublicController],
   providers: [VideoService],
+  exports: [VideoService],
 })
-export class VideoModule {}
+export class VideoModule { }

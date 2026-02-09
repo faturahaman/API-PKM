@@ -28,7 +28,7 @@ export class AuthService {
 
         // buat token
         const payload: JwtPayload = {
-            sub: admin._id.toString(),
+            sub: admin.id,
             name: admin.name,
             level: admin.level
         };

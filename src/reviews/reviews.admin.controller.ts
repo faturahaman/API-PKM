@@ -1,14 +1,14 @@
-import { 
-  Controller, Get, Body, Param, Put, Query, UseGuards 
+import {
+  Controller, Get, Body, Param, Put, Query, UseGuards
 } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
-import { UpdateReviewStatusDto } from './dto/update-review.dto';
+import { UpdateReviewDto } from './dto/update-review.dto';
 import { AuthGuard } from '@nestjs/passport';
 
 @UseGuards(AuthGuard('jwt')) // Guard Global untuk Class ini
 @Controller('admin/reviews') // Endpoint: /api/v1/admin/reviews
 export class ReviewsAdminController {
-  constructor(private readonly reviewsService: ReviewsService) {}
+  constructor(private readonly reviewsService: ReviewsService) { }
 
   // List Semua Review (Termasuk yang belum publish)
   @Get()
@@ -25,8 +25,8 @@ export class ReviewsAdminController {
   // Update Status Publish/Unpublish
   @Put(':id/status')
   updateStatus(
-    @Param('id') id: string, 
-    @Body() updateDto: UpdateReviewStatusDto
+    @Param('id') id: string,
+    @Body() updateDto: UpdateReviewDto
   ) {
     return this.reviewsService.updateStatus(id, updateDto);
   }

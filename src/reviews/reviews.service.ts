@@ -1,47 +1,62 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Review } from './schemas/review.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Review } from './schemas/review.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
-import { UpdateReviewStatusDto } from './dto/update-review.dto';
-import type { PaginateModel } from 'mongoose';
+import { UpdateReviewDto } from './dto/update-review.dto';
 
 @Injectable()
 export class ReviewsService {
   constructor(
-    @InjectModel(Review.name) private reviewModel: PaginateModel<Review>,
-  ) {}
+    @InjectRepository(Review)
+    private reviewRepository: Repository<Review>,
+  ) { }
 
   // Create (Bisa buat Public API)
   async create(createReviewDto: CreateReviewDto) {
-    const newReview = new this.reviewModel(createReviewDto);
-    return newReview.save();
+    const newReview = this.reviewRepository.create(createReviewDto);
+    return this.reviewRepository.save(newReview);
   }
 
   // Find All (Buat Admin Dashboard)
   async findAll(page: number = 1, limit: number = 10, category?: string) {
-    const filter: any = {};
+    const skip = (page - 1) * limit;
+    const where: any = {};
+
     if (category) {
-      filter.category = category;
+      where.category = category;
     }
 
-    return await this.reviewModel.paginate(filter, {
-      page,
-      limit,
-      sort: { created_at: -1 }, // Review terbaru paling atas
+    const [data, total] = await this.reviewRepository.findAndCount({
+      where,
+      skip,
+      take: limit,
+      order: { created_at: 'DESC' },
     });
+
+    return {
+      docs: data,
+      totalDocs: total,
+      limit,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   // Update Status Only (Publish/Unpublish)
-  async updateStatus(id: string, updateDto: UpdateReviewStatusDto) {
-    const updatedReview = await this.reviewModel.findByIdAndUpdate(
-      id,
-      { $set: { is_publish: updateDto.is_publish } }, // Cuma update field ini
-      { new: true }
-    );
+  async updateStatus(id: string, updateDto: UpdateReviewDto) {
+    const review = await this.reviewRepository.findOne({ where: { id } });
 
-    if (!updatedReview) throw new NotFoundException('Review tidak ditemukan');
-    return updatedReview;
+    if (!review) {
+      throw new NotFoundException('Review tidak ditemukan');
+    }
+
+    if (updateDto.is_publish !== undefined) {
+      review.is_publish = updateDto.is_publish;
+    }
+
+    return this.reviewRepository.save(review);
   }
-  
+
   // ⛔ NO DELETE METHOD HERE (Sesuai request)
 }

@@ -1,41 +1,41 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
-import { Banner, BannerDocument } from './schemas/banner.schema';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Banner } from './schemas/banner.entity';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
 import * as fs from 'fs';
-import * as path from 'path'; 
+import * as path from 'path';
 
 @Injectable()
 export class BannerService {
   constructor(
-    @InjectModel(Banner.name) private bannerModel: Model<BannerDocument>,
-  ) {}
+    @InjectRepository(Banner)
+    private bannerRepository: Repository<Banner>,
+  ) { }
 
   // TERIMA FILE DISINI
   async create(createBannerDto: CreateBannerDto, file: Express.Multer.File): Promise<Banner> {
-    const newBanner = new this.bannerModel({
+    const newBanner = this.bannerRepository.create({
       ...createBannerDto,
       image_path: `/uploads/banner/${file.filename}`, // Simpan path otomatis
       is_deleted: 0,
     });
 
-    return newBanner.save();
+    return this.bannerRepository.save(newBanner);
   }
 
   async findAll() {
-    return this.bannerModel
-      .find({ is_deleted: 0 })
-      .sort({ createdAt: -1 })
-      .exec();
+    return this.bannerRepository.find({
+      where: { is_deleted: 0 },
+      order: { created_at: 'DESC' },
+    });
   }
 
   async findOne(id: string): Promise<Banner> {
-    const banner = await this.bannerModel.findOne({ 
-      _id: id, 
-      is_deleted: 0 
-    }).exec();
+    const banner = await this.bannerRepository.findOne({
+      where: { id, is_deleted: 0 }
+    });
 
     if (!banner) {
       throw new NotFoundException(`Banner dengan ID ${id} tidak ditemukan`);
@@ -45,7 +45,7 @@ export class BannerService {
 
   // UPDATE HANDLE GAMBAR BARU (JIKA ADA)
   async update(id: string, updateBannerDto: UpdateBannerDto, file?: Express.Multer.File): Promise<Banner> {
-    let updateData = { ...updateBannerDto };
+    let updateData: any = { ...updateBannerDto };
 
     // Jika user upload gambar baru, update path-nya
     if (file) {
@@ -53,48 +53,22 @@ export class BannerService {
       // (Optional) Logic hapus gambar lama bisa ditaruh disini kalau mau hemat storage
     }
 
-    const updatedBanner = await this.bannerModel
-      .findOneAndUpdate(
-        { _id: id, is_deleted: 0 },
-        { $set: updateData },
-        { new: true },
-      )
-      .exec();
-
-    if (!updatedBanner) {
-      throw new NotFoundException(`Banner tidak ditemukan atau sudah dihapus`);
-    }
-    return updatedBanner;
+    const banner = await this.findOne(id);
+    this.bannerRepository.merge(banner, updateData);
+    return this.bannerRepository.save(banner);
   }
 
   // FIX: GANTI 'status' JADI 'is_publish'
   async updateStatus(id: string, isPublish: boolean): Promise<Banner> {
-    const updatedBanner = await this.bannerModel
-      .findOneAndUpdate(
-        { _id: id, is_deleted: 0 },
-        { $set: { is_publish: isPublish } }, // ✅ Fixed
-        { new: true },
-      )
-      .exec();
-
-    if (!updatedBanner) {
-      throw new NotFoundException(`Banner tidak ditemukan`);
-    }
-    return updatedBanner;
+    const banner = await this.findOne(id);
+    banner.is_publish = isPublish;
+    return this.bannerRepository.save(banner);
   }
 
   async remove(id: string) {
-    const deletedBanner = await this.bannerModel
-      .findOneAndUpdate(
-        { _id: id, is_deleted: 0 },
-        { $set: { is_deleted: 1 } },
-        { new: true },
-      )
-      .exec();
-
-    if (!deletedBanner) {
-      throw new NotFoundException(`Banner tidak ditemukan`);
-    }
+    const banner = await this.findOne(id);
+    banner.is_deleted = 1;
+    await this.bannerRepository.save(banner);
 
     return { message: 'Banner berhasil dihapus' };
   }
