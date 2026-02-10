@@ -1,13 +1,16 @@
 import { IsNotEmpty, IsString, IsOptional, IsEnum } from 'class-validator';
-import { ReviewCategory } from '../schemas/review.entity';
+import { ReviewCategory } from '../entity/review.entity';
+import { SanitizeText } from '../../common/decorators/sanitize.decorator';
 
 export class CreateReviewDto {
   @IsOptional()
   @IsString()
+  @SanitizeText()
   username?: string;
 
   @IsNotEmpty({ message: 'Isi pesan review wajib diisi' })
   @IsString()
+  @SanitizeText()
   message: string;
 
   @IsNotEmpty({ message: 'Kategori wajib dipilih' })

@@ -1,6 +1,6 @@
 
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
-import { Album } from '../../album/schemas/album.entity';
+import { Album } from '../../album/entity/album.entity';
 
 @Entity('gallery')
 export class Gallery {

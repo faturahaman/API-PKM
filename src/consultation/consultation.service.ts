@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { Consultation } from './schemas/consultation.entity';
+import { Consultation } from './entity/consultation.entity';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
 
@@ -10,7 +10,7 @@ export class ConsultationService {
   constructor(
     @InjectRepository(Consultation)
     private consultationRepo: Repository<Consultation>,
-  ) {}
+  ) { }
 
   async create(createDto: CreateConsultationDto) {
     const newConsultation = this.consultationRepo.create(createDto);
@@ -18,7 +18,7 @@ export class ConsultationService {
   }
   async findAllAdmin(page: number, limit: number, search?: string) {
     const skip = (page - 1) * limit;
-    
+
     const queryBuilder = this.consultationRepo.createQueryBuilder('c');
 
     if (search) {
@@ -26,8 +26,8 @@ export class ConsultationService {
     }
 
     queryBuilder.orderBy('c.created_at', 'DESC')
-                .skip(skip)
-                .take(limit);
+      .skip(skip)
+      .take(limit);
 
     const [data, total] = await queryBuilder.getManyAndCount();
 
@@ -41,7 +41,7 @@ export class ConsultationService {
 
   async findAllPublic(page: number, limit: number) {
     const skip = (page - 1) * limit;
-    
+
     const [data, total] = await this.consultationRepo.findAndCount({
       where: { is_publish: true },
       order: { created_at: 'DESC' },

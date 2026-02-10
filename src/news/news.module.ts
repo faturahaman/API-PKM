@@ -3,7 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { NewsService } from './news.service';
 import { NewsAdminController } from './news.admin.controller';
 import { NewsPublicController } from './news.public.controller';
-import { News } from './schemas/news.entity';
+import { News } from './entity/news.entity';
 
 @Module({
   imports: [TypeOrmModule.forFeature([News])],

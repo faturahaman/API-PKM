@@ -2,11 +2,10 @@ import { Controller, Post, Body, Get, Query } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 
-@Controller('reviews') // Endpoint: /api/v1/reviews
+@Controller('reviews')
 export class ReviewsPublicController {
   constructor(private readonly reviewsService: ReviewsService) {}
 
-  // Submit Review (Public)
   @Post()
   create(@Body() createReviewDto: CreateReviewDto) {
     return this.reviewsService.create(createReviewDto);

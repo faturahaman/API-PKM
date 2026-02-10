@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
-import { Album } from './schemas/album.entity';
+import { Album } from './entity/album.entity';
 import { GalleryService } from '../gallery/gallery.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
 
