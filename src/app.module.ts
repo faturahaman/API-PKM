@@ -14,6 +14,7 @@ import { VideoModule } from './video/video.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { NewsModule } from './news/news.module';
+import { ConsultationModule } from './consultation/consultation.module';
 
 @Module({
   imports: [
@@ -27,31 +28,22 @@ import { NewsModule } from './news/news.module';
         password: process.env.DB_PASSWORD,
         database: process.env.DB_DATABASE,
         autoLoadEntities: true,
-        synchronize: true, // TODO: false di production
+        synchronize: true, // jangan lupa diubah jadi false pas production
       }),
     }),
-
     AdminsModule,
     AuthModule,
     GalleryModule,
-
     ServeStaticModule.forRoot({
       rootPath: join(process.cwd(), 'public'),
     }),
-
     AlbumModule,
-
     BannerModule,
-
     VideoModule,
-
     AgendaModule,
-
     ReviewsModule,
-
     NewsModule,
-
-
+    ConsultationModule,
   ],
   controllers: [AppController],
   providers: [AppService],
