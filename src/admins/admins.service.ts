@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Admin } from './schemas/admin.entity';
+import { Admin } from './entity/admin.entity';
 import * as fs from 'fs';
 import * as path from 'path';
 import { UpdateAdminDto } from './dto/update-admin.dto';

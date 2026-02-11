@@ -1,10 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Like } from 'typeorm';
-import { News } from './schemas/news.entity';
+import { News } from './entity/news.entity';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
-import * as sanitizeHtml from 'sanitize-html';
 
 @Injectable()
 export class NewsService {
@@ -14,19 +13,8 @@ export class NewsService {
   ) { }
 
   async create(createNewsDto: CreateNewsDto, imagePath: string) {
-    // Security: XSS Sanitization
-    const sanitize = (sanitizeHtml as any).default || sanitizeHtml;
-    const cleanContent = sanitize(createNewsDto.content, {
-      allowedTags: sanitizeHtml.defaults.allowedTags.concat(['img', 'h1', 'h2']),
-      allowedAttributes: {
-        ...sanitizeHtml.defaults.allowedAttributes,
-        'img': ['src', 'alt']
-      }
-    });
-
     const newNews = this.newsRepository.create({
       ...createNewsDto,
-      content: cleanContent, // Simpan content bersih
       image: imagePath,
       is_deleted: false,
     });

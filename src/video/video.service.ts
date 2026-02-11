@@ -1,7 +1,7 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Video } from './schemas/video.entity';
+import { Video } from './entity/video.entity';
 import { CreateVideoDto } from './dto/create-video.dto';
 
 @Injectable()

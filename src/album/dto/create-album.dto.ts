@@ -1,19 +1,20 @@
-// create-album.dto.ts
 import { IsString, IsNotEmpty, IsOptional, IsArray } from 'class-validator';
+import { SanitizeText } from '../../common/decorators/sanitize.decorator';
 
 export class CreateAlbumDto {
     @IsString()
     @IsNotEmpty()
+    @SanitizeText()
     album_title: string;
 
     @IsOptional()
     @IsString()
+    @SanitizeText()
     description?: string;
 
-    // 👇 Tambahkan ini agar tidak error saat diakses (Data.album_cover)
     @IsOptional()
     @IsString()
-    album_cover?: string; 
+    album_cover?: string;
 
     @IsOptional()
     @IsArray()

@@ -1,8 +1,8 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
-import { Gallery } from './schemas/gallery.entity';
-import { Album } from '../album/schemas/album.entity';
+import { Gallery } from './entity/gallery.entity';
+import { Album } from '../album/entity/album.entity';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 
 @Injectable()

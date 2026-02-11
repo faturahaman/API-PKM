@@ -3,8 +3,8 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { GalleryService } from './gallery.service';
 import { GalleryAdminController } from './gallery.admin.controller';
 import { GalleryPublicController } from './gallery.public.controller';
-import { Gallery } from './schemas/gallery.entity';
-import { Album } from '../album/schemas/album.entity';
+import { Gallery } from './entity/gallery.entity';
+import { Album } from '../album/entity/album.entity';
 
 @Module({
   imports: [
