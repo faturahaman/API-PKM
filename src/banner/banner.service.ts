@@ -4,8 +4,6 @@ import { Repository } from 'typeorm';
 import { Banner } from './schemas/banner.entity';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
-import * as fs from 'fs';
-import * as path from 'path';
 
 @Injectable()
 export class BannerService {
@@ -25,11 +23,20 @@ export class BannerService {
     return this.bannerRepository.save(newBanner);
   }
 
-  async findAll() {
-    return this.bannerRepository.find({
+  async findAll(page: number = 1, limit: number = 10) {
+    const [data, total] = await this.bannerRepository.findAndCount({
       where: { is_deleted: 0 },
       order: { created_at: 'DESC' },
+      skip: (page - 1) * limit,
+      take: limit,
     });
+
+    return {
+      docs: data,
+      total,
+      page,
+      totalPages: Math.ceil(total / limit)
+    };
   }
 
   async findOne(id: string): Promise<Banner> {

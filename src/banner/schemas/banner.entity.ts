@@ -9,6 +9,9 @@ export class Banner {
     @Column()
     image_path: string;
 
+    @Column()
+    title: string;
+
     @Column({ nullable: true })
     description: string;
 

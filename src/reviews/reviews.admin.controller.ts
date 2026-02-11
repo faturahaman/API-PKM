@@ -23,7 +23,7 @@ export class ReviewsAdminController {
   }
 
   // Update Status Publish/Unpublish
-  @Put(':id/status')
+  @Put(':id')
   updateStatus(
     @Param('id') id: string,
     @Body() updateDto: UpdateReviewDto
