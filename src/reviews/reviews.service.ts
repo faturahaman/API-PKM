@@ -23,6 +23,7 @@ export class ReviewsService {
     const skip = (page - 1) * limit;
     const where: any = {};
 
+    // filter kategori
     if (category) {
       where.category = category;
     }
@@ -36,7 +37,7 @@ export class ReviewsService {
 
     return {
       docs: data,
-      totalDocs: total,
+      total,
       limit,
       page,
       totalPages: Math.ceil(total / limit),
@@ -57,5 +58,4 @@ export class ReviewsService {
 
     return this.reviewRepository.save(review);
   }
-
 }
