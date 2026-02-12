@@ -58,5 +58,4 @@ export class ReviewsService {
     return this.reviewRepository.save(review);
   }
 
-  // ⛔ NO DELETE METHOD HERE (Sesuai request)
 }

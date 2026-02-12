@@ -15,6 +15,7 @@ import { AgendaModule } from './agenda/agenda.module';
 import { ReviewsModule } from './reviews/reviews.module';
 import { NewsModule } from './news/news.module';
 import { ConsultationModule } from './consultation/consultation.module';
+import { VisitorModule } from './visitor/visitor.module';
 
 @Module({
   imports: [
@@ -28,7 +29,7 @@ import { ConsultationModule } from './consultation/consultation.module';
         password: process.env.DB_PASSWORD,
         database: process.env.DB_DATABASE,
         autoLoadEntities: true,
-        synchronize: true, // jangan lupa diubah jadi false pas production
+        synchronize: true, // jangan lupa diubah jadi false pas production le
       }),
     }),
     AdminsModule,
@@ -44,6 +45,7 @@ import { ConsultationModule } from './consultation/consultation.module';
     ReviewsModule,
     NewsModule,
     ConsultationModule,
+    VisitorModule,
   ],
   controllers: [AppController],
   providers: [AppService],
