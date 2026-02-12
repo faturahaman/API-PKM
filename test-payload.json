@@ -1,0 +1,17 @@
+{
+    "service_name": "Web Development",
+    "icon": "code-icon",
+    "description": "Full stack web development services",
+    "flows": [
+        {
+            "title_flow": "Consultation",
+            "description_flow": "Discuss requirements",
+            "step_order": 1
+        },
+        {
+            "title_flow": "Design",
+            "description_flow": "Create UI/UX",
+            "step_order": 2
+        }
+    ]
+}
