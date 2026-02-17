@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 /**
  * Upload types dengan konfigurasi masing-masing
  */
-export type UploadType = 'profile' | 'gallery' | 'video' | 'banner';
+export type UploadType = 'profile' | 'gallery' | 'video' | 'banner' | 'document';
 
 /**
  * Konfigurasi untuk setiap tipe upload
@@ -51,6 +51,14 @@ const UPLOAD_CONFIGS: Record<UploadType, UploadConfig> = {
         allowedMimeTypes: /^image\/(jpg|jpeg|png|gif)$/,
         allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif'],
         errorMessage: 'Format file tidak valid! Hanya jpg, jpeg, png, gif yang diperbolehkan.',
+    },
+    document: {
+        folder: 'documents',
+        maxSize: 10 * 1024 * 1024, // 10MB
+        allowedMimeTypes: /^(application\/pdf|image\/(jpg|jpeg|png))$/,
+        allowedExtensions: ['.pdf', '.jpg', '.jpeg', '.png'],
+        errorMessage: 'Format file tidak valid! Hanya pdf, jpg, jpeg, png yang diperbolehkan.',
+        filenamePrefix: 'DOC',
     },
 };
 

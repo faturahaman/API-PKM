@@ -15,7 +15,7 @@ export class ServiceFlow {
     id: number;
 
     @ManyToOne(() => Service, (service) => service.flows, {
-        onDelete: 'CASCADE', // Jika service dihapus, flow ikut terhapus
+        onDelete: 'CASCADE', 
         orphanedRowAction: 'delete',
     })
     @JoinColumn({ name: 'service_id' })

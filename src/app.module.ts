@@ -17,6 +17,9 @@ import { NewsModule } from './news/news.module';
 import { ConsultationModule } from './consultation/consultation.module';
 import { VisitorModule } from './visitor/visitor.module';
 import { ServicesModule } from './services/services.module';
+import { MenusModule } from './menus/menus.module';
+import { PagesModule } from './pages/pages.module';
+import { UploadAdminController } from './upload/upload.controller';
 
 @Module({
   imports: [
@@ -48,8 +51,10 @@ import { ServicesModule } from './services/services.module';
     ConsultationModule,
     VisitorModule,
     ServicesModule,
+    MenusModule,
+    PagesModule,
   ],
-  controllers: [AppController],
+  controllers: [AppController, UploadAdminController],
   providers: [AppService],
 })
 export class AppModule { }

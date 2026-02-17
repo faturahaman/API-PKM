@@ -15,10 +15,11 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   app.useGlobalPipes(new ValidationPipe({
-    transform: true, // Enable class-transformer decorators
-    whitelist: true, // Strip properties not defined in DTO
-    forbidNonWhitelisted: true, // Throw error on unknown properties
+    transform: true, 
+    whitelist: true, 
+    forbidNonWhitelisted: true, 
   }));
+  
 
   await app.listen(process.env.PORT || 3002);
 }
