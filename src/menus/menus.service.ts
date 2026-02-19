@@ -128,11 +128,6 @@ export class MenusService {
 
   async remove(id: string) {
     const menu = await this.findOne(id);
-    // Karena CASCADE diset di entity (onDelete: 'CASCADE'), children akan ikut terhapus atau set null tergantung konfigurasi.
-    // Di entity 'menu.entity.ts': @ManyToOne(() => Menu, (menu) => menu.children, { onDelete: 'CASCADE' })
-    // Ini berarti jika Parent dihapus, record ini (Child) akan terhapus.
-    // TAPI, logic TypeORM onDelete: 'CASCADE' ada di sisi Child (ManyToOne).
-    // Jika kita hapus Menu A, maka semua Menu yang punya parent A akan terhapus.
     return this.menuRepository.remove(menu);
   }
 }
