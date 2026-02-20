@@ -1,9 +1,10 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, IsNull } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { Menu } from './entity/menu.entity';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
+import slugify from 'slugify';
 
 @Injectable()
 export class MenusService {
@@ -13,15 +14,40 @@ export class MenusService {
   ) { }
 
   async create(createMenuDto: CreateMenuDto) {
-    const menu = this.menuRepository.create(createMenuDto);
+    const { parent_id, title, ...menuData } = createMenuDto;
 
-    if (createMenuDto.parentId) {
-      const parent = await this.menuRepository.findOneBy({ id: createMenuDto.parentId });
+    const slug = slugify(title, { lower: true, strict: true });
+
+    const exists = await this.menuRepository.findOne({ where: { slug } });
+    if (exists) throw new BadRequestException('Slug sudah digunakan');
+
+    const menu = this.menuRepository.create({
+      ...menuData,
+      title,
+      slug
+    });
+
+    if (parent_id) {
+      const parent = await this.menuRepository.findOneBy({ id: parent_id });
       if (!parent) throw new NotFoundException('Parent Menu tidak ditemukan');
       menu.parent = parent;
     }
 
     return this.menuRepository.save(menu);
+  }
+
+  async findBySlug(slug: string) {
+    const menu = await this.menuRepository.findOne({
+      where: { slug, status: 1 }
+    })
+    if (!menu) throw new NotFoundException('Menu tidak ditemukan')
+    return menu
+  }
+
+  async toggleStatus(id: string) {
+    const menu = await this.findOne(id)
+    menu.status = menu.status === 1 ? 0 : 1
+    return this.menuRepository.save(menu)
   }
 
   async findPublicTree() {
@@ -42,8 +68,8 @@ export class MenusService {
       menuMap.set(menu.id, {
         ...menu,
         children: [],
-        // Hapus circular reference parent object agar response bersih, simpan parentId jika perlu
-        parentId: menu.parent ? menu.parent.id : null,
+        // Hapus circular reference parent object agar response bersih, simpan parent_id jika perlu
+        parent_id: menu.parent ? menu.parent.id : null,
         parent: undefined
       });
     });
@@ -108,11 +134,13 @@ export class MenusService {
   async update(id: string, updateMenuDto: UpdateMenuDto) {
     const menu = await this.findOne(id);
 
-    if (updateMenuDto.parentId !== undefined) {
-      if (updateMenuDto.parentId === null) {
+    const { parent_id, ...updateData } = updateMenuDto;
+
+    if (parent_id !== undefined) {
+      if (parent_id === null) {
         menu.parent = null;
       } else {
-        const parent = await this.menuRepository.findOneBy({ id: updateMenuDto.parentId });
+        const parent = await this.menuRepository.findOneBy({ id: parent_id });
         if (!parent) throw new NotFoundException('Parent Menu tidak ditemukan');
         // Prevent circular dependency: parent cannot be itself
         if (parent.id === id) {
@@ -122,8 +150,20 @@ export class MenusService {
       }
     }
 
-    const updatedMenu = this.menuRepository.merge(menu, updateMenuDto);
-    return this.menuRepository.save(updatedMenu);
+    if (updateData.title) {
+      const slug = slugify(updateData.title, { lower: true, strict: true });
+
+      const exists = await this.menuRepository.findOne({
+        where: { slug, id: Not(id) }
+      });
+
+      if (exists) throw new BadRequestException('Slug sudah digunakan');
+
+      menu.slug = slug;
+    }
+
+    this.menuRepository.merge(menu, updateData);
+    return this.menuRepository.save(menu);
   }
 
   async remove(id: string) {

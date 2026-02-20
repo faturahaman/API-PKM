@@ -1,4 +1,4 @@
-import { Controller, Get } from '@nestjs/common';
+import { Controller, Get, Param } from '@nestjs/common';
 import { MenusService } from './menus.service';
 
 @Controller('menus')
@@ -8,5 +8,15 @@ export class MenusPublicController {
   @Get()
   findPublicTree() {
     return this.menusService.findPublicTree();
+  }
+
+  @Get('slug/:slug')
+  findBySlug(@Param('slug') slug: string) {
+    return this.menusService.findBySlug(slug);
+  }
+
+  @Get(':slug')
+  findOneBySlug(@Param('slug') slug: string) {
+    return this.menusService.findBySlug(slug);
   }
 }

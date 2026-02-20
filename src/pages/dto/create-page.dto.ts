@@ -1,19 +1,35 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
-import { SanitizeHtml, SanitizeText } from '../../common/decorators/sanitize.decorator'; 
+import { IsString, IsNotEmpty, IsOptional, IsInt, Allow } from 'class-validator';
+import { SanitizeHtml, SanitizeText } from '../../common/decorators/sanitize.decorator';
 
 export class CreatePageDto {
-    @SanitizeText() 
+    @SanitizeText()
     @IsString()
     @IsNotEmpty()
     title: string;
 
-    @SanitizeHtml() 
+    @SanitizeHtml()
     @IsString()
     @IsOptional()
     content?: string;
 
-    @SanitizeText() 
+    @SanitizeText()
     @IsString()
     @IsOptional()
     slug?: string;
+
+    // FIX: Allow null/empty values for menu_id
+    @Allow()
+    menu_id?: string | null;
+
+    @IsString()
+    @IsOptional()
+    layout?: string;
+
+    @IsInt()
+    @IsOptional()
+    status?: number;
+
+    @IsString()
+    @IsOptional()
+    image?: string;
 }

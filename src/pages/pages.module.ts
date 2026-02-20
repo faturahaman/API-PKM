@@ -4,9 +4,10 @@ import { PagesService } from './pages.service';
 import { PagesAdminController } from './pages.admin.controller';
 import { PagesPublicController } from './pages.public.controller';
 import { Page } from './entity/page.entity';
+import { Menu } from '../menus/entity/menu.entity';
 
 @Module({
-    imports: [TypeOrmModule.forFeature([Page])],
+    imports: [TypeOrmModule.forFeature([Page, Menu])],
     controllers: [PagesAdminController, PagesPublicController],
     providers: [PagesService],
     exports: [PagesService],

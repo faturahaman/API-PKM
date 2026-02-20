@@ -37,4 +37,9 @@ export class PagesAdminController {
     remove(@Param('id') id: string) {
         return this.pagesService.remove(id);
     }
+
+    @Patch(':id/toggle-status')
+    toggleStatus(@Param('id') id: string) {
+        return this.pagesService.toggleStatus(id);
+    }
 }

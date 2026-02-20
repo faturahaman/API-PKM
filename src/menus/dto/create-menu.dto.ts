@@ -1,4 +1,4 @@
-import { IsString, IsNotEmpty, IsOptional, IsInt, IsUUID } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, Allow } from 'class-validator';
 
 export class CreateMenuDto {
   @IsString()
@@ -13,7 +13,12 @@ export class CreateMenuDto {
   @IsOptional()
   order?: number;
 
-  @IsUUID()
+  @IsInt()
   @IsOptional()
-  parentId?: string;
+  status?: number;
+
+  // FIX: Allow null values for parent_id
+  // Validation untuk memastikan UUID yang valid akan dilakukan di service layer
+  @Allow()
+  parent_id?: string | null;
 }

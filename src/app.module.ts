@@ -13,10 +13,8 @@ import { BannerModule } from './banner/banner.module';
 import { VideoModule } from './video/video.module';
 import { AgendaModule } from './agenda/agenda.module';
 import { ReviewsModule } from './reviews/reviews.module';
-import { NewsModule } from './news/news.module';
 import { ConsultationModule } from './consultation/consultation.module';
 import { VisitorModule } from './visitor/visitor.module';
-import { ServicesModule } from './services/services.module';
 import { MenusModule } from './menus/menus.module';
 import { PagesModule } from './pages/pages.module';
 import { UploadAdminController } from './upload/upload.controller';
@@ -47,10 +45,8 @@ import { UploadAdminController } from './upload/upload.controller';
     VideoModule,
     AgendaModule,
     ReviewsModule,
-    NewsModule,
     ConsultationModule,
     VisitorModule,
-    ServicesModule,
     MenusModule,
     PagesModule,
   ],

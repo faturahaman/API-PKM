@@ -33,4 +33,8 @@ export class MenusAdminController {
   remove(@Param('id') id: string) {
     return this.menusService.remove(id);
   }
+  @Patch(':id/toggle-status')
+  toggleStatus(@Param('id') id: string) {
+    return this.menusService.toggleStatus(id)
+  }
 }
