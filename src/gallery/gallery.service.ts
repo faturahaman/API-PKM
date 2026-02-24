@@ -86,10 +86,24 @@ export class GalleryService {
   }
 
   async resetAlbumId(albumId: string) {
-    return this.galleryRepository.update(
-      { album_id: albumId },
-      { album_id: null } as any
-    );
+    return this.galleryRepository
+      .createQueryBuilder()
+      .update(Gallery)
+      .set({ album_id: () => 'NULL' })
+      .where('album_id = :albumId', { albumId })
+      .execute();
+  }
+
+  async removeFromAlbum(photoIds: string[], albumId: string) {
+    await this.galleryRepository
+      .createQueryBuilder()
+      .update(Gallery)
+      .set({ album_id: () => 'NULL' })
+      .whereInIds(photoIds)
+      .execute();
+
+    await this.syncAlbumData(albumId);
+    return { success: true };
   }
 
   private async syncAlbumData(albumId: string) {

@@ -10,6 +10,11 @@ export class PagesPublicController {
         return this.pagesService.findPublished();
     }
 
+    @Get('pelayanan')
+    findPelayanan() {
+        return this.pagesService.findPelayanan();
+    }
+
     @Get('menu/:menuId')
     findByMenuId(@Param('menuId') menuId: string) {
         return this.pagesService.findByMenuId(menuId);

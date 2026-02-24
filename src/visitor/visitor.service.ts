@@ -20,9 +20,9 @@ export class VisitorService {
     }
 
     async trackVisitor(req: Request) {
-        let ip = req.headers['x-forwarded-for'] || req.ip || req.socket.remoteAddress;
+        let ip = req.headers['x-forwarded-for'] || req.ip || req.socket?.remoteAddress || '0.0.0.0';
         if (Array.isArray(ip)) ip = ip[0];
-        const ipString = (ip as string).replace('::ffff:', ''); // Clean IPv4 from IPv6 wrapper
+        const ipString = (ip as string).replace('::ffff:', '');
 
         const userAgent = req.headers['user-agent'] || 'unknown';
 

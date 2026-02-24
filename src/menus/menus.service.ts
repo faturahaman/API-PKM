@@ -9,25 +9,30 @@ import slugify from 'slugify';
 @Injectable()
 export class MenusService {
   constructor(
+    // Injeksi repository menu
     @InjectRepository(Menu)
     private menuRepository: Repository<Menu>,
   ) { }
 
+  // Membuat menu baru
   async create(createMenuDto: CreateMenuDto) {
     const { parent_id, title, ...menuData } = createMenuDto;
 
+    // Generate slug otomatis: huruf kecil, tanpa spasi (diganti strip)
     const slug = slugify(title, { lower: true, strict: true });
 
+    // Pastikan slug tidak duplikat
     const exists = await this.menuRepository.findOne({ where: { slug } });
     if (exists) throw new BadRequestException('Slug sudah digunakan');
 
     const menu = this.menuRepository.create({
       ...menuData,
       title,
-      slug
+      slug,
     });
 
-    if (parent_id) {
+    // Jika ada parent_id, hubungkan sebagai submenu
+    if (parent_id && parent_id !== '0') {
       const parent = await this.menuRepository.findOneBy({ id: parent_id });
       if (!parent) throw new NotFoundException('Parent Menu tidak ditemukan');
       menu.parent = parent;
@@ -36,22 +41,24 @@ export class MenusService {
     return this.menuRepository.save(menu);
   }
 
+  // Mengambil menu berdasarkan slug (untuk publik)
   async findBySlug(slug: string) {
     const menu = await this.menuRepository.findOne({
-      where: { slug, status: 1 }
-    })
-    if (!menu) throw new NotFoundException('Menu tidak ditemukan')
-    return menu
+      where: { slug, status: 1 },
+    });
+    if (!menu) throw new NotFoundException('Menu tidak ditemukan');
+    return menu;
   }
 
+  // Mengubah status aktif/nonaktif menu
   async toggleStatus(id: string) {
-    const menu = await this.findOne(id)
-    menu.status = menu.status === 1 ? 0 : 1
-    return this.menuRepository.save(menu)
+    const menu = await this.findOne(id);
+    menu.status = menu.status === 1 ? 0 : 1;
+    return this.menuRepository.save(menu);
   }
 
+  // Mengambil struktur menu pohon untuk publik
   async findPublicTree() {
-    // Ambil semua menu dengan relasi parent untuk mempermudah grouping
     const allMenus = await this.menuRepository.find({
       relations: ['parent'],
       order: { order: 'ASC' },
@@ -60,24 +67,22 @@ export class MenusService {
     return this.buildTree(allMenus);
   }
 
+  // Fungsi helper untuk menyusun hierarchy menu
   private buildTree(menus: Menu[]): any[] {
     const menuMap = new Map<string, any>();
 
-    // 1. Init map untuk setiap item, siapkan array children
-    menus.forEach(menu => {
+    menus.forEach((menu) => {
       menuMap.set(menu.id, {
         ...menu,
         children: [],
-        // Hapus circular reference parent object agar response bersih, simpan parent_id jika perlu
         parent_id: menu.parent ? menu.parent.id : null,
-        parent: undefined
+        parent: undefined,
       });
     });
 
     const rootMenus: any[] = [];
 
-    // 2. Susun hierarchy
-    menus.forEach(menu => {
+    menus.forEach((menu) => {
       const mappedMenu = menuMap.get(menu.id);
 
       if (menu.parent) {
@@ -85,7 +90,6 @@ export class MenusService {
         if (parent) {
           parent.children.push(mappedMenu);
         } else {
-          // Fallback jika parent tidak ada di set (misal soft delete atau error data), jadikan root
           rootMenus.push(mappedMenu);
         }
       } else {
@@ -93,10 +97,9 @@ export class MenusService {
       }
     });
 
-    // 3. Recursive sort
     const sortRecursive = (items: any[]) => {
       items.sort((a, b) => a.order - b.order);
-      items.forEach(item => {
+      items.forEach((item) => {
         if (item.children.length > 0) {
           sortRecursive(item.children);
         }
@@ -104,24 +107,23 @@ export class MenusService {
     };
 
     sortRecursive(rootMenus);
-
     return rootMenus;
   }
 
+  // Mengambil semua menu untuk kebutuhan admin
   async findAllAdmin() {
-    // Flat list dengan info parent, cocok untuk tabel admin
     const menus = await this.menuRepository.find({
       relations: ['parent'],
       order: { order: 'ASC' },
     });
 
-    // Map agar parent cuma tampil nama/id saja biar tidak heavy
-    return menus.map(menu => ({
+    return menus.map((menu) => ({
       ...menu,
-      parent: menu.parent ? { id: menu.parent.id, title: menu.parent.title } : null
+      parent: menu.parent ? { id: menu.parent.id, title: menu.parent.title } : null,
     }));
   }
 
+  // Mengambil satu menu berdasarkan ID
   async findOne(id: string) {
     const menu = await this.menuRepository.findOne({
       where: { id },
@@ -131,34 +133,32 @@ export class MenusService {
     return menu;
   }
 
+  // Memperbarui data menu
   async update(id: string, updateMenuDto: UpdateMenuDto) {
     const menu = await this.findOne(id);
-
     const { parent_id, ...updateData } = updateMenuDto;
 
+    // Update parent jika ada perubahan
     if (parent_id !== undefined) {
-      if (parent_id === null) {
+      if (parent_id === null || parent_id === '0' || parent_id === '__none__') {
         menu.parent = null;
       } else {
         const parent = await this.menuRepository.findOneBy({ id: parent_id });
         if (!parent) throw new NotFoundException('Parent Menu tidak ditemukan');
-        // Prevent circular dependency: parent cannot be itself
         if (parent.id === id) {
-          throw new Error('Menu tidak bisa menjadi parent untuk dirinya sendiri');
+          throw new BadRequestException('Menu tidak bisa menjadi parent untuk dirinya sendiri');
         }
         menu.parent = parent;
       }
     }
 
+    // Update slug jika judul berubah
     if (updateData.title) {
       const slug = slugify(updateData.title, { lower: true, strict: true });
-
       const exists = await this.menuRepository.findOne({
-        where: { slug, id: Not(id) }
+        where: { slug, id: Not(id) },
       });
-
       if (exists) throw new BadRequestException('Slug sudah digunakan');
-
       menu.slug = slug;
     }
 
@@ -166,6 +166,7 @@ export class MenusService {
     return this.menuRepository.save(menu);
   }
 
+  // Menghapus menu
   async remove(id: string) {
     const menu = await this.findOne(id);
     return this.menuRepository.remove(menu);

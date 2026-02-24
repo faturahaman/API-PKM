@@ -9,10 +9,10 @@ import { GalleryModule } from '../gallery/gallery.module';
 @Module({
   imports: [
     TypeOrmModule.forFeature([Album]),
-    GalleryModule // If circular dependency exists, use forwardRef
+    GalleryModule,
   ],
   controllers: [AlbumAdminController, AlbumPublicController],
   providers: [AlbumService],
-  exports: [TypeOrmModule], // Export TypeOrmModule so other modules can use repository
+  exports: [AlbumService],
 })
 export class AlbumModule { }

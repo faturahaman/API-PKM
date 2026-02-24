@@ -13,42 +13,42 @@ export class AuthService {
     ) { }
 
     async signIn(signInDto: CreateUserDto) {
-        // verify recaptcha
         if (!signInDto.recaptchaToken) {
             throw new UnauthorizedException('Silakan verifikasi reCAPTCHA Anda');
         }
 
+        // Verifikasi reCAPTCHA
         const secretKey = process.env.RECAPTCHA_SECRET_KEY;
         const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${signInDto.recaptchaToken}`;
 
+        let recaptchaData: { success: boolean };
         try {
             const recaptchaRes = await fetch(verifyUrl, { method: 'POST' });
-            const recaptchaData = await recaptchaRes.json();
-
-            if (!recaptchaData.success) {
-                throw new UnauthorizedException('Verifikasi reCAPTCHA gagal');
-            }
-        } catch (error) {
-            throw new UnauthorizedException('Gagal memverifikasi reCAPTCHA');
+            recaptchaData = await recaptchaRes.json();
+        } catch {
+            throw new UnauthorizedException('Gagal menghubungi layanan reCAPTCHA');
         }
 
-        // cek admin
+        if (!recaptchaData.success) {
+            throw new UnauthorizedException('Verifikasi reCAPTCHA gagal');
+        }
+
+        // Cek admin
         const admin = await this.adminsService.findOneByName(signInDto.name);
         if (!admin) {
             throw new UnauthorizedException('Nama atau Password Salah!');
         }
 
-        // cek password
+        // Cek password
         const isPasswordValid = await bcrypt.compare(signInDto.password, admin.password);
         if (!isPasswordValid) {
             throw new UnauthorizedException('Nama atau Password Salah!');
         }
 
-        // buat token
         const payload: JwtPayload = {
             sub: admin.id,
             name: admin.name,
-            level: admin.level
+            level: admin.level,
         };
 
         return {

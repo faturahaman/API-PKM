@@ -10,13 +10,8 @@ export class MenusPublicController {
     return this.menusService.findPublicTree();
   }
 
-  @Get('slug/:slug')
-  findBySlug(@Param('slug') slug: string) {
-    return this.menusService.findBySlug(slug);
-  }
-
   @Get(':slug')
-  findOneBySlug(@Param('slug') slug: string) {
+  findBySlug(@Param('slug') slug: string) {
     return this.menusService.findBySlug(slug);
   }
 }

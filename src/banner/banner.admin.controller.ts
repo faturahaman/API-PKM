@@ -1,6 +1,6 @@
 import {
   Controller, Get, Post, Body, Param, Delete, Put, UseGuards,
-  UseInterceptors, UploadedFile, BadRequestException
+  UseInterceptors, UploadedFile, BadRequestException, Query
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BannerService } from './banner.service';
@@ -9,7 +9,7 @@ import { UpdateBannerDto } from './dto/update-banner.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { createMulterOptions } from '../common/multer.utils';
 
-@UseGuards(AuthGuard('jwt')) // Guard Global untuk Class ini
+@UseGuards(AuthGuard('jwt'))
 @Controller('admin/banner')
 export class BannerAdminController {
   constructor(private readonly bannerService: BannerService) { }
@@ -27,8 +27,11 @@ export class BannerAdminController {
   }
 
   @Get()
-  findAll() {
-    return this.bannerService.findAll();
+  findAll(
+    @Query('page') page: string,
+    @Query('limit') limit: string
+  ) {
+    return this.bannerService.findAll(parseInt(page) || 1, parseInt(limit) || 10);
   }
 
   @Get(':id')

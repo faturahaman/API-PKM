@@ -15,12 +15,14 @@ export class AdminsController {
 
   @Get('profile')
   getProfile(@Request() req: any) {
-    return req.user;
+    const { password, ...user } = req.user;
+    return user;
   }
 
   @Get('dashboard')
   getDashboard(@Request() req: any) {
-    return req.user; // Atau logic dashboard lain
+    const { password, ...user } = req.user;
+    return user;
   }
 
   @Put('profile')
@@ -30,8 +32,8 @@ export class AdminsController {
     @Body() body: { name: string },
     @UploadedFile() file?: Express.Multer.File
   ) {
-    const adminId = req.user._id;
-    const photoPath = file ? `/uploads/profiles/${file.filename}` : undefined;
+    const adminId = req.user.id;
+    const photoPath = file ? file.filename : undefined;
     return this.adminsService.updateProfile(adminId, photoPath, body.name);
   }
 }

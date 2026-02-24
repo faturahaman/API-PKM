@@ -1,4 +1,5 @@
 import { IsString, IsNotEmpty, IsOptional, IsInt, Allow } from 'class-validator';
+import { Transform } from 'class-transformer';
 import { SanitizeHtml, SanitizeText } from '../../common/decorators/sanitize.decorator';
 
 export class CreatePageDto {
@@ -17,8 +18,8 @@ export class CreatePageDto {
     @IsOptional()
     slug?: string;
 
-    // FIX: Allow null/empty values for menu_id
     @Allow()
+    @Transform(({ value }) => (value === '0' || value === '' || value === 'null' || value === 'undefined') ? null : value)
     menu_id?: string | null;
 
     @IsString()
@@ -27,9 +28,14 @@ export class CreatePageDto {
 
     @IsInt()
     @IsOptional()
+    @Transform(({ value }) => value && !isNaN(Number(value)) ? Number(value) : undefined)
     status?: number;
 
     @IsString()
     @IsOptional()
     image?: string;
+
+    @IsString()
+    @IsOptional()
+    file?: string;
 }

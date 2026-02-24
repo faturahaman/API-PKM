@@ -1,7 +1,7 @@
 import { Controller, Get, HttpCode, Post, Body, Req } from '@nestjs/common';
 import { VisitorService } from './visitor.service';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
-import express from 'express';
+import type { Request } from 'express';
 
 @Controller('visitor')
 export class VisitorController {
@@ -15,7 +15,7 @@ export class VisitorController {
 
   @Post('track')
   @HttpCode(200)
-  autoTrack(@Req() req: express.Request) {
+  autoTrack(@Req() req: Request) {
     return this.visitorService.trackVisitor(req);
   }
 
@@ -23,7 +23,7 @@ export class VisitorController {
   findAll() {
     return this.visitorService.findAll();
   }
-  
+
   @Get('count')
   count() {
     return this.visitorService.countAll();

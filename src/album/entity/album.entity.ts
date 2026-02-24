@@ -10,6 +10,9 @@ export class Album {
     @Column()
     album_title: string;
 
+    @Column({ nullable: true, type: 'text' })
+    description: string;
+
     @Column({ nullable: true })
     album_cover: string;
 

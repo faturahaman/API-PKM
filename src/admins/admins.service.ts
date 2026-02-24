@@ -4,7 +4,6 @@ import { Repository } from 'typeorm';
 import { Admin } from './entity/admin.entity';
 import * as fs from 'fs';
 import * as path from 'path';
-import { UpdateAdminDto } from './dto/update-admin.dto';
 
 @Injectable()
 export class AdminsService {
@@ -21,25 +20,27 @@ export class AdminsService {
     return this.adminRepository.findOne({ where: { id } });
   }
 
-  async updateProfile(id: string, photoPath: string | undefined, name: string): Promise<Admin> {
+  async updateProfile(id: string, filename: string | undefined, name: string): Promise<Omit<Admin, 'password'>> {
     const admin = await this.findOne(id);
 
     if (!admin) {
       throw new NotFoundException('Admin tidak ditemukan');
     }
 
-    // Handle photo deletion if new photo is uploaded
-    if (photoPath && photoPath.trim() !== "") {
+    if (filename && filename.trim() !== '') {
+      // Delete old photo if it exists and is not the default
       if (admin.photo && admin.photo !== 'puskesmasLogo.png') {
-        const oldPath = path.join(process.cwd(), 'public/profiles', admin.photo);
+        const oldPath = path.join(process.cwd(), 'public', 'uploads', 'profiles', admin.photo);
         if (fs.existsSync(oldPath)) {
           fs.unlinkSync(oldPath);
         }
       }
-      admin.photo = photoPath;
+      admin.photo = filename;
     }
 
     admin.name = name;
-    return this.adminRepository.save(admin);
+    const saved = await this.adminRepository.save(admin);
+    const { password, ...result } = saved;
+    return result;
   }
 }

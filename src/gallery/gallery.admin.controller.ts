@@ -47,4 +47,10 @@ export class GalleryAdminController {
     updateAlbum(@Body() body: { photo_ids: string[], album_id: string }) {
         return this.galleryService.updateAlbumId(body.photo_ids, body.album_id);
     }
+
+    // Hapus foto dari album (set album_id ke null)
+    @Put('remove-from-album')
+    removeFromAlbum(@Body() body: { photo_ids: string[], album_id: string }) {
+        return this.galleryService.removeFromAlbum(body.photo_ids, body.album_id);
+    }
 }

@@ -16,7 +16,10 @@ export class Page {
     content: string;
 
     @Column({ nullable: true })
-    image: string;
+    image: string; // Khusus foto (thumbnail/pajangan)
+
+    @Column({ nullable: true })
+    file: string; // Khusus lampiran (PDF/Dokumen)
 
     @Column({ default: 'artikel' })
     layout: string;

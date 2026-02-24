@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { Page } from './entity/page.entity';
@@ -16,10 +16,9 @@ export class PagesService {
         private menuRepository: Repository<Menu>,
     ) { }
 
-    async create(createPageDto: CreatePageDto) {
-        // Validasi title harus ada
+    async create(createPageDto: CreatePageDto, image?: Express.Multer.File, file?: Express.Multer.File) {
         if (!createPageDto.title || createPageDto.title.trim() === '') {
-            throw new Error('Title is required');
+            throw new BadRequestException('Judul halaman wajib diisi');
         }
 
         let slug = createPageDto.slug;
@@ -29,17 +28,18 @@ export class PagesService {
             slug = slugify(slug, { lower: true, strict: true });
         }
 
-        // Check uniqueness
         await this.ensureSlugUnique(slug);
 
         const { menu_id, ...pageData } = createPageDto;
+
         const page = this.pageRepository.create({
             ...pageData,
-            slug
+            image: image ? `/uploads/pages/${image.filename}` : createPageDto.image,
+            file: file ? `/uploads/pages/${file.filename}` : createPageDto.file,
+            slug,
         });
 
-        // Handle menu_id - bisa null, undefined, atau UUID
-        if (menu_id && menu_id !== '' && menu_id !== null) {
+        if (menu_id && menu_id !== '' && menu_id !== '0' && menu_id !== null) {
             const menu = await this.menuRepository.findOneBy({ id: menu_id });
             if (!menu) throw new NotFoundException('Menu tidak ditemukan');
             page.menu = menu;
@@ -64,45 +64,56 @@ export class PagesService {
         const [data, total] = await query.getManyAndCount();
 
         return {
-            data: data.map(p => ({
+            data: data.map((p) => ({
                 ...p,
                 menu_id: p.menu ? p.menu.id : null,
-                menu: p.menu ? { id: p.menu.id, title: p.menu.title } : null
+                menu: p.menu ? { id: p.menu.id, title: p.menu.title } : null,
             })),
             total,
             page,
-            lastPage: Math.ceil(total / limit)
+            lastPage: Math.ceil(total / limit),
         };
+    }
+
+    async findPelayanan() {
+        return this.pageRepository.find({
+            where: [
+                { menu: { slug: 'pelayanan' }, status: 1 },
+                { menu: { parent: { slug: 'pelayanan' } }, status: 1 },
+            ],
+            relations: ['menu', 'menu.parent'],
+            order: { createdAt: 'ASC' },
+        });
     }
 
     async findOne(id: string) {
         const page = await this.pageRepository.findOne({
             where: { id },
-            relations: ['menu']
+            relations: ['menu'],
         });
-        if (!page) throw new NotFoundException('Page not found');
+        if (!page) throw new NotFoundException('Halaman tidak ditemukan');
         return {
             ...page,
             menu_id: page.menu ? page.menu.id : null,
-            menu: page.menu ? { id: page.menu.id, title: page.menu.title } : null
+            menu: page.menu ? { id: page.menu.id, title: page.menu.title } : null,
         };
     }
 
     async findBySlug(slug: string) {
         const page = await this.pageRepository.findOne({
             where: { slug, status: 1 },
-            relations: ['menu']
+            relations: ['menu'],
         });
-        if (!page) throw new NotFoundException('Page not found');
+        if (!page) throw new NotFoundException('Halaman tidak ditemukan');
         return page;
     }
 
     async findByMenuId(menuId: string) {
         const page = await this.pageRepository.findOne({
             where: { menu: { id: menuId }, status: 1 },
-            relations: ['menu']
+            relations: ['menu'],
         });
-        if (!page) throw new NotFoundException('Page not found');
+        if (!page) throw new NotFoundException('Halaman tidak ditemukan');
         return page;
     }
 
@@ -110,20 +121,19 @@ export class PagesService {
         return this.pageRepository.find({
             where: { status: 1 },
             relations: ['menu'],
-            order: { createdAt: 'DESC' }
+            order: { createdAt: 'DESC' },
         });
     }
 
-    async update(id: string, updatePageDto: UpdatePageDto) {
+    async update(id: string, updatePageDto: UpdatePageDto, image?: Express.Multer.File, file?: Express.Multer.File) {
         const pageData = await this.pageRepository.findOne({
             where: { id },
-            relations: ['menu']
+            relations: ['menu'],
         });
-        if (!pageData) throw new NotFoundException('Page not found');
+        if (!pageData) throw new NotFoundException('Halaman tidak ditemukan');
 
         const { menu_id, ...updateData } = updatePageDto;
 
-        // Handle slug update - only change if explicitly provided
         if (updateData.slug !== undefined && updateData.slug !== '') {
             const newSlug = slugify(updateData.slug, { lower: true, strict: true });
             if (newSlug !== pageData.slug) {
@@ -131,11 +141,9 @@ export class PagesService {
                 pageData.slug = newSlug;
             }
         }
-        // If slug is not provided, keep the existing slug
 
-        // Handle menu_id update
         if (menu_id !== undefined) {
-            if (menu_id === null || menu_id === '') {
+            if (menu_id === null || menu_id === '' || menu_id === '0') {
                 pageData.menu = null;
             } else {
                 const menu = await this.menuRepository.findOneBy({ id: menu_id });
@@ -144,19 +152,26 @@ export class PagesService {
             }
         }
 
+        if (image) {
+            pageData.image = `/uploads/pages/${image.filename}`;
+        }
+        if (file) {
+            pageData.file = `/uploads/pages/${file.filename}`;
+        }
+
         this.pageRepository.merge(pageData, updateData);
         return this.pageRepository.save(pageData);
     }
 
     async remove(id: string) {
         const result = await this.pageRepository.delete(id);
-        if (result.affected === 0) throw new NotFoundException('Page not found');
+        if (result.affected === 0) throw new NotFoundException('Halaman tidak ditemukan');
         return { deleted: true };
     }
 
-    async toggleStatus(id: string) {     
+    async toggleStatus(id: string) {
         const page = await this.pageRepository.findOneBy({ id });
-        if (!page) throw new NotFoundException('Page not found');
+        if (!page) throw new NotFoundException('Halaman tidak ditemukan');
         page.status = page.status === 1 ? 0 : 1;
         return this.pageRepository.save(page);
     }
@@ -168,7 +183,7 @@ export class PagesService {
         }
         const exist = await this.pageRepository.findOneBy(where);
         if (exist) {
-            throw new ConflictException(`Slug '${slug}' already exists`);
+            throw new ConflictException(`Slug '${slug}' sudah digunakan`);
         }
     }
 }
