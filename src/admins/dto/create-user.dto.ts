@@ -1,4 +1,4 @@
-import { IsString, MinLength } from "class-validator";
+import { IsString, MinLength, IsOptional } from "class-validator";
 import { SanitizeText } from "../../common/decorators/sanitize.decorator";
 
 export class CreateUserDto {
@@ -9,4 +9,8 @@ export class CreateUserDto {
     @IsString()
     @MinLength(8)
     password: string;
+
+    @IsString()
+    @IsOptional()
+    recaptchaToken?: string;
 }

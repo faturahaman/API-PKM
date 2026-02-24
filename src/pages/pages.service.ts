@@ -154,7 +154,7 @@ export class PagesService {
         return { deleted: true };
     }
 
-    async toggleStatus(id: string) {
+    async toggleStatus(id: string) {     
         const page = await this.pageRepository.findOneBy({ id });
         if (!page) throw new NotFoundException('Page not found');
         page.status = page.status === 1 ? 0 : 1;

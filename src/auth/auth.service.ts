@@ -13,6 +13,24 @@ export class AuthService {
     ) { }
 
     async signIn(signInDto: CreateUserDto) {
+        // verify recaptcha
+        if (!signInDto.recaptchaToken) {
+            throw new UnauthorizedException('Silakan verifikasi reCAPTCHA Anda');
+        }
+
+        const secretKey = process.env.RECAPTCHA_SECRET_KEY;
+        const verifyUrl = `https://www.google.com/recaptcha/api/siteverify?secret=${secretKey}&response=${signInDto.recaptchaToken}`;
+
+        try {
+            const recaptchaRes = await fetch(verifyUrl, { method: 'POST' });
+            const recaptchaData = await recaptchaRes.json();
+
+            if (!recaptchaData.success) {
+                throw new UnauthorizedException('Verifikasi reCAPTCHA gagal');
+            }
+        } catch (error) {
+            throw new UnauthorizedException('Gagal memverifikasi reCAPTCHA');
+        }
 
         // cek admin
         const admin = await this.adminsService.findOneByName(signInDto.name);
