@@ -32,7 +32,7 @@ import { UploadAdminController } from './upload/upload.controller';
         password: process.env.DB_PASSWORD,
         database: process.env.DB_DATABASE,
         autoLoadEntities: true,
-        synchronize: true, // jangan lupa diubah jadi false pas production le
+        synchronize: true, 
       }),
     }),
     AdminsModule,
