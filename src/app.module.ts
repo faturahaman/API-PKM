@@ -17,6 +17,7 @@ import { ConsultationModule } from './consultation/consultation.module';
 import { VisitorModule } from './visitor/visitor.module';
 import { MenusModule } from './menus/menus.module';
 import { PagesModule } from './pages/pages.module';
+import { StaticPagesModule } from './static-pages/static-pages.module';
 import { UploadAdminController } from './upload/upload.controller';
 
 @Module({
@@ -49,6 +50,7 @@ import { UploadAdminController } from './upload/upload.controller';
     VisitorModule,
     MenusModule,
     PagesModule,
+    StaticPagesModule,
   ],
   controllers: [AppController, UploadAdminController],
   providers: [AppService],

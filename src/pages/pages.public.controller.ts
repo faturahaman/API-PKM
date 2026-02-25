@@ -20,8 +20,13 @@ export class PagesPublicController {
         return this.pagesService.findByMenuId(menuId);
     }
 
-    @Get(':slug')
-    findBySlug(@Param('slug') slug: string) {
-        return this.pagesService.findBySlug(slug);
+    @Get('menu/:menuId/all')
+    findAllByMenuId(@Param('menuId') menuId: string) {
+        return this.pagesService.findAllByMenuId(menuId);
+    }
+
+    @Get(':id')
+    findOne(@Param('id') id: string) {
+        return this.pagesService.findOne(id);
     }
 }

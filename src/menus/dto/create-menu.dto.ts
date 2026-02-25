@@ -1,9 +1,13 @@
-import { IsString, IsNotEmpty, IsOptional, IsInt, Allow } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, Allow, IsEnum } from 'class-validator';
 
 export class CreateMenuDto {
   @IsString()
   @IsNotEmpty()
   title: string;
+
+  @IsEnum(['static', 'dynamic', 'custom'])
+  @IsOptional()
+  type?: 'static' | 'dynamic' | 'custom';
 
   @IsString()
   @IsNotEmpty()

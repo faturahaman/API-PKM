@@ -1,8 +1,13 @@
-import { IsString, IsNotEmpty, IsOptional, IsInt, Allow } from 'class-validator';
+import { IsString, IsNotEmpty, IsOptional, IsInt, Allow, IsEnum } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { SanitizeHtml, SanitizeText } from '../../common/decorators/sanitize.decorator';
 
 export class CreatePageDto {
+    @SanitizeText()
+    @IsString()
+    @IsOptional()
+    user_id?: string;
+
     @SanitizeText()
     @IsString()
     @IsNotEmpty()
@@ -11,25 +16,7 @@ export class CreatePageDto {
     @SanitizeHtml()
     @IsString()
     @IsOptional()
-    content?: string;
-
-    @SanitizeText()
-    @IsString()
-    @IsOptional()
-    slug?: string;
-
-    @Allow()
-    @Transform(({ value }) => (value === '0' || value === '' || value === 'null' || value === 'undefined') ? null : value)
-    menu_id?: string | null;
-
-    @IsString()
-    @IsOptional()
-    layout?: string;
-
-    @IsInt()
-    @IsOptional()
-    @Transform(({ value }) => value && !isNaN(Number(value)) ? Number(value) : undefined)
-    status?: number;
+    dynamic_content?: string;
 
     @IsString()
     @IsOptional()
@@ -38,4 +25,17 @@ export class CreatePageDto {
     @IsString()
     @IsOptional()
     file?: string;
+
+    @IsEnum(['pdf', 'halaman', 'kartu'])
+    @IsOptional()
+    type?: 'pdf' | 'halaman' | 'kartu';
+
+    @Allow()
+    @Transform(({ value }) => (value === '0' || value === '' || value === 'null' || value === 'undefined') ? null : value)
+    menu_id?: string | null;
+
+    @IsInt()
+    @IsOptional()
+    @Transform(({ value }) => value && !isNaN(Number(value)) ? Number(value) : undefined)
+    status?: number;
 }

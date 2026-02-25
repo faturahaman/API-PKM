@@ -8,10 +8,13 @@ export class Menu {
   @Column()
   title: string;
 
+  @Column({ type: 'enum', enum: ['static', 'dynamic', 'custom'], default: 'custom' })
+  type: 'static' | 'dynamic' | 'custom';
+
   @Column({ type: 'int', default: 1 })
   status: number;
 
-  @Column()
+  @Column({ nullable: true })
   url_target: string;
 
   @Column({ type: 'int', default: 0 })
@@ -20,6 +23,9 @@ export class Menu {
   @ManyToOne(() => Menu, (menu) => menu.children, { onDelete: 'CASCADE', nullable: true })
   @JoinColumn({ name: 'parent_id' })
   parent: Menu | null;
+
+  @Column({ nullable: true })
+  parent_id: string;
 
   @OneToMany(() => Menu, (menu) => menu.parent)
   children: Menu[];

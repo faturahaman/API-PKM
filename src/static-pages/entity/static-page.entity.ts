@@ -1,31 +1,16 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
 import { Menu } from '../../menus/entity/menu.entity';
 
-@Entity('pages')
-export class Page {
+@Entity('static_pages')
+export class StaticPage {
     @PrimaryGeneratedColumn('uuid')
     id: string;
-
-    @Column({ nullable: true })
-    user_id: string;
 
     @Column()
     title: string;
 
     @Column({ type: 'text', nullable: true })
-    dynamic_content: string;
-
-    @Column({ nullable: true })
-    image: string;
-
-    @Column({ nullable: true })
-    file: string;
-
-    @Column({ type: 'enum', enum: ['pdf', 'halaman', 'kartu'], default: 'halaman' })
-    type: 'pdf' | 'halaman' | 'kartu';
-
-    @Column({ type: 'int', default: 1 })
-    status: number;
+    static_content: string;
 
     @ManyToOne(() => Menu, { nullable: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'menu_id' })

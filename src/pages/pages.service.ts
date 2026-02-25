@@ -1,11 +1,10 @@
-import { Injectable, NotFoundException, ConflictException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Not } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Page } from './entity/page.entity';
 import { Menu } from '../menus/entity/menu.entity';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
-import slugify from 'slugify';
 
 @Injectable()
 export class PagesService {
@@ -16,27 +15,17 @@ export class PagesService {
         private menuRepository: Repository<Menu>,
     ) { }
 
-    async create(createPageDto: CreatePageDto, image?: Express.Multer.File, file?: Express.Multer.File) {
+    async create(createPageDto: CreatePageDto, image?: Express.Multer.File, document?: Express.Multer.File) {
         if (!createPageDto.title || createPageDto.title.trim() === '') {
             throw new BadRequestException('Judul halaman wajib diisi');
         }
-
-        let slug = createPageDto.slug;
-        if (!slug) {
-            slug = slugify(createPageDto.title, { lower: true, strict: true });
-        } else {
-            slug = slugify(slug, { lower: true, strict: true });
-        }
-
-        await this.ensureSlugUnique(slug);
 
         const { menu_id, ...pageData } = createPageDto;
 
         const page = this.pageRepository.create({
             ...pageData,
             image: image ? `/uploads/pages/${image.filename}` : createPageDto.image,
-            file: file ? `/uploads/pages/${file.filename}` : createPageDto.file,
-            slug,
+            file: document ? `/uploads/pages/${document.filename}` : createPageDto.file,
         });
 
         if (menu_id && menu_id !== '' && menu_id !== '0' && menu_id !== null) {
@@ -99,15 +88,6 @@ export class PagesService {
         };
     }
 
-    async findBySlug(slug: string) {
-        const page = await this.pageRepository.findOne({
-            where: { slug, status: 1 },
-            relations: ['menu'],
-        });
-        if (!page) throw new NotFoundException('Halaman tidak ditemukan');
-        return page;
-    }
-
     async findByMenuId(menuId: string) {
         const page = await this.pageRepository.findOne({
             where: { menu: { id: menuId }, status: 1 },
@@ -115,6 +95,16 @@ export class PagesService {
         });
         if (!page) throw new NotFoundException('Halaman tidak ditemukan');
         return page;
+    }
+
+    // Ambil SEMUA halaman aktif berdasarkan menu (untuk list dokumen)
+    async findAllByMenuId(menuId: string) {
+        const pages = await this.pageRepository.find({
+            where: { menu: { id: menuId }, status: 1 },
+            relations: ['menu'],
+            order: { createdAt: 'DESC' },
+        });
+        return pages;
     }
 
     async findPublished() {
@@ -125,7 +115,7 @@ export class PagesService {
         });
     }
 
-    async update(id: string, updatePageDto: UpdatePageDto, image?: Express.Multer.File, file?: Express.Multer.File) {
+    async update(id: string, updatePageDto: UpdatePageDto, image?: Express.Multer.File, document?: Express.Multer.File) {
         const pageData = await this.pageRepository.findOne({
             where: { id },
             relations: ['menu'],
@@ -133,14 +123,6 @@ export class PagesService {
         if (!pageData) throw new NotFoundException('Halaman tidak ditemukan');
 
         const { menu_id, ...updateData } = updatePageDto;
-
-        if (updateData.slug !== undefined && updateData.slug !== '') {
-            const newSlug = slugify(updateData.slug, { lower: true, strict: true });
-            if (newSlug !== pageData.slug) {
-                await this.ensureSlugUnique(newSlug, id);
-                pageData.slug = newSlug;
-            }
-        }
 
         if (menu_id !== undefined) {
             if (menu_id === null || menu_id === '' || menu_id === '0') {
@@ -155,8 +137,9 @@ export class PagesService {
         if (image) {
             pageData.image = `/uploads/pages/${image.filename}`;
         }
-        if (file) {
-            pageData.file = `/uploads/pages/${file.filename}`;
+
+        if (document) {
+            pageData.file = `/uploads/pages/${document.filename}`;
         }
 
         this.pageRepository.merge(pageData, updateData);
@@ -174,16 +157,5 @@ export class PagesService {
         if (!page) throw new NotFoundException('Halaman tidak ditemukan');
         page.status = page.status === 1 ? 0 : 1;
         return this.pageRepository.save(page);
-    }
-
-    private async ensureSlugUnique(slug: string, excludeId?: string) {
-        const where: any = { slug };
-        if (excludeId) {
-            where.id = Not(excludeId);
-        }
-        const exist = await this.pageRepository.findOneBy(where);
-        if (exist) {
-            throw new ConflictException(`Slug '${slug}' sudah digunakan`);
-        }
     }
 }
