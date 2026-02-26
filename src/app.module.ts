@@ -19,6 +19,7 @@ import { MenusModule } from './menus/menus.module';
 import { PagesModule } from './pages/pages.module';
 import { StaticPagesModule } from './static-pages/static-pages.module';
 import { UploadAdminController } from './upload/upload.controller';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -51,6 +52,7 @@ import { UploadAdminController } from './upload/upload.controller';
     MenusModule,
     PagesModule,
     StaticPagesModule,
+    EmailModule,
   ],
   controllers: [AppController, UploadAdminController],
   providers: [AppService],
