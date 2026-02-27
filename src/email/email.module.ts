@@ -30,5 +30,6 @@ import { EmailController } from './email.controller';
   ],
   providers: [EmailService],
   controllers: [EmailController],
+  exports: [EmailService],
 })
-export class EmailModule {}
+export class EmailModule { }

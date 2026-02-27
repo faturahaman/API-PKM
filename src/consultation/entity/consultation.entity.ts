@@ -1,6 +1,6 @@
 import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
 
-@Entity('consultations') 
+@Entity('consultations')
 export class Consultation {
   @PrimaryGeneratedColumn()
   id: number;
@@ -8,14 +8,17 @@ export class Consultation {
   @Column()
   username: string;
 
-  @Column({ nullable: true }) 
-  phone_number: string;
+  @Column({})
+  email: string;
 
   @Column()
   subject: string;
 
-  @Column({ type: 'text' }) 
+  @Column({ type: 'text' })
   message: string;
+
+  @Column({ type: 'text', nullable: true })
+  answer: string;
 
   @Column({ default: false })
   is_answer: boolean;

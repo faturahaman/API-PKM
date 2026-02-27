@@ -4,10 +4,12 @@ import { ConsultationService } from './consultation.service';
 import { ConsultationAdminController } from './consultation.admin.controller';
 import { ConsultationPublicController } from './consultation.public.controller';
 import { Consultation } from './entity/consultation.entity';
+import { EmailModule } from '../email/email.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Consultation])
+    TypeOrmModule.forFeature([Consultation]),
+    EmailModule,
   ],
   controllers: [ConsultationAdminController, ConsultationPublicController],
   providers: [ConsultationService],

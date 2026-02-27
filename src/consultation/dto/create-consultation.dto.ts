@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsString, IsOptional, IsBoolean } from 'class-validator';
+import { IsNotEmpty, IsString, IsOptional, IsEmail } from 'class-validator';
 import { SanitizeText } from '../../common/decorators/sanitize.decorator';
 
 export class CreateConsultationDto {
@@ -8,9 +8,8 @@ export class CreateConsultationDto {
   username: string;
 
   @IsOptional()
-  @IsString()
-  @SanitizeText()
-  phone_number?: string;
+  @IsEmail()
+  email?: string;
 
   @IsNotEmpty()
   @IsString()
