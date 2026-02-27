@@ -13,7 +13,7 @@ export class Video {
     video_desc: string;
 
     @Column()
-    data: string;
+    embed: string;
 
     @Column({ default: false })
     is_embed: boolean;
@@ -22,7 +22,7 @@ export class Video {
     is_deleted: boolean;
 
     @CreateDateColumn()
-    created_at: Date;
+    upload_date: Date;
 
     @UpdateDateColumn()
     updated_at: Date;

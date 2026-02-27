@@ -48,7 +48,7 @@ export class VideoService {
       ...videoData,
       video_title: createVideoDto.video_title,
       is_embed: isEmbedBoolean,
-      data: finalDataString,
+      embed: finalDataString,
       is_deleted: false
     });
 
@@ -61,7 +61,7 @@ export class VideoService {
       where: { is_deleted: false },
       skip,
       take: limit,
-      order: { created_at: 'DESC' },
+      order: { upload_date: 'DESC' },
     });
 
     return {

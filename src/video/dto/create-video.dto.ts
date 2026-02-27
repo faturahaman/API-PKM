@@ -19,10 +19,7 @@ export class CreateVideoDto {
 
     @IsNotEmpty()
     @Transform(({ value }) => {
-        if (value === '1' || value === 1) return true;
-        if (value === '0' || value === 0) return false;
-
-        return value === 'true' ? true : value === 'false' ? false : value;
+        return value === 'true' || value === true || value === '1' || value === 1;
     })
     @IsBoolean()
     is_embed: boolean;

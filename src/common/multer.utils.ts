@@ -7,7 +7,7 @@ import { v4 as uuidv4 } from 'uuid';
 /**
  * Upload types dengan konfigurasi masing-masing
  */
-export type UploadType = 'profile' | 'gallery' | 'video' | 'banner' | 'document' | 'pages' | 'static-pages';
+export type UploadType = 'profile' | 'gallery' | 'video' | 'banner' | 'document' | 'pages' | 'static-pages' | 'web-info';
 
 /**
  * Konfigurasi untuk setiap tipe upload
@@ -75,6 +75,14 @@ const UPLOAD_CONFIGS: Record<UploadType, UploadConfig> = {
         allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp', '.pdf'],
         errorMessage: 'Format file tidak valid! Hanya gambar (jpg, png, webp) dan PDF yang diperbolehkan.',
         filenamePrefix: 'STATIC',
+    },
+    'web-info': {
+        folder: 'web-info',
+        maxSize: 2 * 1024 * 1024, // 2MB
+        allowedMimeTypes: /^image\/(jpg|jpeg|png)$/,
+        allowedExtensions: ['.jpg', '.jpeg', '.png'],
+        errorMessage: 'Format file tidak valid! Hanya gambar (jpg, jpeg, png) yang diperbolehkan.',
+        filenamePrefix: 'LOGO',
     },
 };
 

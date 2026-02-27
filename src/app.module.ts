@@ -18,6 +18,7 @@ import { VisitorModule } from './visitor/visitor.module';
 import { MenusModule } from './menus/menus.module';
 import { PagesModule } from './pages/pages.module';
 import { StaticPagesModule } from './static-pages/static-pages.module';
+import { PuskesmasInfoModule } from './puskesmas-info/puskesmas-info.module';
 import { UploadAdminController } from './upload/upload.controller';
 
 @Module({
@@ -51,6 +52,7 @@ import { UploadAdminController } from './upload/upload.controller';
     MenusModule,
     PagesModule,
     StaticPagesModule,
+    PuskesmasInfoModule,
   ],
   controllers: [AppController, UploadAdminController],
   providers: [AppService],
