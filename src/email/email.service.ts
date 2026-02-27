@@ -17,7 +17,7 @@ async sendMail(to: string, subject: string, message: string) {
     });
     return { message: 'Email sukses dikirim!' };
   } catch (error) {
-    console.log('Error dari Nodemailer:', error);
+    console.log(error);
     throw error;
   }
 }

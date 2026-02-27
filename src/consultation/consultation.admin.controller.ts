@@ -1,12 +1,21 @@
-import { Controller, Get, Body, Param, Put, Delete, Query, UseGuards } from '@nestjs/common';
+import { Controller, Get, Body, Param, Put, Delete, Query, UseGuards, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConsultationService } from './consultation.service';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
+import { IsNotEmpty, IsString } from 'class-validator';
+import { SanitizeText } from '../common/decorators/sanitize.decorator';
+
+export class ReplyConsultationDto {
+  @IsNotEmpty()
+  @IsString()
+  @SanitizeText()
+  answer: string;
+}
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('admin/consultation')
 export class ConsultationAdminController {
-  constructor(private readonly consultationService: ConsultationService) {}
+  constructor(private readonly consultationService: ConsultationService) { }
 
   @Get()
   findAll(
@@ -19,9 +28,18 @@ export class ConsultationAdminController {
     return this.consultationService.findAllAdmin(p, l, search);
   }
 
+  @Post(':id/reply')
+  @HttpCode(HttpStatus.OK)
+  reply(
+    @Param('id') id: string,
+    @Body() body: ReplyConsultationDto,
+  ) {
+    return this.consultationService.replyConsultation(+id, body.answer);
+  }
+
   @Put(':id')
   update(
-    @Param('id') id: string, 
+    @Param('id') id: string,
     @Body() updateDto: UpdateConsultationDto
   ) {
     return this.consultationService.update(+id, updateDto);

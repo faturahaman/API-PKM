@@ -52,7 +52,15 @@ export class VisitorService {
             path: path,
         });
 
-        return await this.visitorRepository.save(visitor);
+        try {
+            return await this.visitorRepository.save(visitor);
+        } catch (err) {
+            // Race condition: another request already inserted for this IP+date
+            if (err?.code === 'ER_DUP_ENTRY') {
+                return { message: 'Visitor already tracked today.' };
+            }
+            throw err;
+        }
     }
 
 

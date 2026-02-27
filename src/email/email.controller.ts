@@ -14,7 +14,6 @@ export class EmailController {
 
   @Post('send')
 async sendEmail(@Body() body: any) {
-  // Tambahin ini buat ngecek apakah data dari Postman masuk:
   
   return this.emailService.sendMail(body.to, body.subject, body.message);
 }

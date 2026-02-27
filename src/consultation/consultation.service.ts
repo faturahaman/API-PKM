@@ -1,21 +1,24 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Consultation } from './entity/consultation.entity';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
+import { EmailService } from '../email/email.service';
 
 @Injectable()
 export class ConsultationService {
   constructor(
     @InjectRepository(Consultation)
     private consultationRepo: Repository<Consultation>,
+    private readonly emailService: EmailService,
   ) { }
 
   async create(createDto: CreateConsultationDto) {
     const newConsultation = this.consultationRepo.create(createDto);
     return await this.consultationRepo.save(newConsultation);
   }
+
   async findAllAdmin(page: number, limit: number, search?: string) {
     const skip = (page - 1) * limit;
 
@@ -57,6 +60,28 @@ export class ConsultationService {
     if (!consultation) throw new NotFoundException(`Consultation #${id} not found`);
     const updated = this.consultationRepo.merge(consultation, updateDto);
     return await this.consultationRepo.save(updated);
+  }
+
+  async replyConsultation(id: number, answer: string) {
+    const consultation = await this.consultationRepo.findOneBy({ id });
+    if (!consultation) throw new NotFoundException(`Consultation #${id} not found`);
+
+    if (!consultation.email) {
+      throw new BadRequestException('Konsultasi ini tidak memiliki alamat email. Tidak bisa mengirim balasan.');
+    }
+
+    // Simpan jawaban ke database
+    consultation.answer = answer;
+    consultation.is_answer = true;
+    await this.consultationRepo.save(consultation);
+
+    // Kirim email ke pengunjung
+    const subject = `Balasan Konsultasi: ${consultation.subject}`;
+    const emailBody = `Halo ${consultation.username},\n\nTerima kasih telah menghubungi kami.\n\nPertanyaan Anda:\n"${consultation.message}"\n\nBalasan dari tim kami:\n${answer}\n\nHormat kami,\nTim Puskesmas`;
+
+    await this.emailService.sendMail(consultation.email, subject, emailBody);
+
+    return { message: 'Balasan berhasil dikirim dan disimpan!' };
   }
 
   async remove(id: number) {
