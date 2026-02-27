@@ -75,6 +75,17 @@ export class PagesService {
         });
     }
 
+    async findBerita() {
+        return this.pageRepository.find({
+            where: [
+                { menu: { slug: 'Berita' }, status: 1 },
+                { menu: { parent: { slug: 'Berita' } }, status: 1 },
+            ],
+            relations: ['menu', 'menu.parent'],
+            order: { createdAt: 'ASC' },
+        });
+    }
+
     async findOne(id: string) {
         const page = await this.pageRepository.findOne({
             where: { id },
@@ -157,5 +168,12 @@ export class PagesService {
         if (!page) throw new NotFoundException('Halaman tidak ditemukan');
         page.status = page.status === 1 ? 0 : 1;
         return this.pageRepository.save(page);
+    }
+
+    async findOneByData(data: string) {
+        console.log(data);
+        const page = await this.pageRepository.findOne({ where: { title: data } });
+        if (!page) throw new NotFoundException('Halaman tidak ditemukan');
+        return page;
     }
 }

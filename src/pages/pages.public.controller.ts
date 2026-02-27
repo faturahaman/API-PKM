@@ -15,6 +15,11 @@ export class PagesPublicController {
         return this.pagesService.findPelayanan();
     }
 
+    @Get('berita')
+    findBerita() {
+        return this.pagesService.findBerita();
+    }
+
     @Get('menu/:menuId')
     findByMenuId(@Param('menuId') menuId: string) {
         return this.pagesService.findByMenuId(menuId);
@@ -28,5 +33,10 @@ export class PagesPublicController {
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.pagesService.findOne(id);
+    }
+
+    @Get('data/:data')
+    findOneByData(@Param('data') data: string) {
+        return this.pagesService.findOneByData(data);
     }
 }
