@@ -20,6 +20,7 @@ import { PagesModule } from './pages/pages.module';
 import { StaticPagesModule } from './static-pages/static-pages.module';
 import { PuskesmasInfoModule } from './puskesmas-info/puskesmas-info.module';
 import { UploadAdminController } from './upload/upload.controller';
+import { EmailModule } from './email/email.module';
 
 @Module({
   imports: [
@@ -33,7 +34,7 @@ import { UploadAdminController } from './upload/upload.controller';
         password: process.env.DB_PASSWORD,
         database: process.env.DB_DATABASE,
         autoLoadEntities: true,
-        synchronize: true, // jangan lupa diubah jadi false pas production le
+        synchronize: true,
       }),
     }),
     AdminsModule,
@@ -53,6 +54,7 @@ import { UploadAdminController } from './upload/upload.controller';
     PagesModule,
     StaticPagesModule,
     PuskesmasInfoModule,
+    EmailModule,
   ],
   controllers: [AppController, UploadAdminController],
   providers: [AppService],

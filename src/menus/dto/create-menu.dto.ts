@@ -1,17 +1,13 @@
 import { IsString, IsNotEmpty, IsOptional, IsInt, Allow, IsEnum } from 'class-validator';
-
+import { MenuType } from '../enums/menu-type.enum';
 export class CreateMenuDto {
   @IsString()
   @IsNotEmpty()
   title: string;
 
-  @IsEnum(['static', 'dynamic', 'custom'])
+  @IsEnum(MenuType)
   @IsOptional()
-  type?: 'static' | 'dynamic' | 'custom';
-
-  @IsString()
-  @IsNotEmpty()
-  url_target: string;
+  type?: MenuType;
 
   @IsInt()
   @IsOptional()

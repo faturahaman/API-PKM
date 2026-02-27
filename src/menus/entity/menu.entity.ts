@@ -1,4 +1,5 @@
 import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
+import { MenuType } from '../enums/menu-type.enum';
 
 @Entity('menus')
 export class Menu {
@@ -8,19 +9,16 @@ export class Menu {
   @Column()
   title: string;
 
-  @Column({ type: 'enum', enum: ['static', 'dynamic', 'custom'], default: 'custom' })
-  type: 'static' | 'dynamic' | 'custom';
+  @Column({ type: 'enum', enum: MenuType, default: MenuType.STATIC })
+  type: MenuType;
 
   @Column({ type: 'int', default: 1 })
   status: number;
 
-  @Column({ nullable: true })
-  url_target: string;
-
   @Column({ type: 'int', default: 0 })
   order: number;
 
-  @ManyToOne(() => Menu, (menu) => menu.children, { onDelete: 'CASCADE', nullable: true })
+  @ManyToOne(() => Menu, (menu) => menu.children, { onDelete: 'RESTRICT', nullable: true })
   @JoinColumn({ name: 'parent_id' })
   parent: Menu | null;
 
@@ -30,7 +28,7 @@ export class Menu {
   @OneToMany(() => Menu, (menu) => menu.parent)
   children: Menu[];
 
-  @Column({ nullable: true })
+  @Column({ unique: true })
   slug: string;
 
   @CreateDateColumn()
