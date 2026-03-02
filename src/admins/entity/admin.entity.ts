@@ -28,6 +28,9 @@ export class Admin {
     @Column()
     password: string;
 
+    @Column({ nullable: true, type: 'text' })
+    current_token: string;
+
     @CreateDateColumn()
     created_at: Date;
 

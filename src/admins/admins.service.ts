@@ -43,4 +43,8 @@ export class AdminsService {
     const { password, ...result } = saved;
     return result;
   }
+
+  async updateCurrentToken(id: string, token: string) {
+    return this.adminRepository.update(id, { current_token: token });
+  }
 }

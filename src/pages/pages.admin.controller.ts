@@ -40,6 +40,12 @@ export class PagesAdminController {
         return this.pagesService.findAllAdmin(search, Number(page), Number(limit));
     }
 
+    // Check if menu already has a page linked (type 'halaman')
+    @Get('check-menu')
+    checkMenuLink(@Query('menu_id') menuId: string) {
+        return this.pagesService.checkMenuLink(menuId);
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.pagesService.findOne(id);

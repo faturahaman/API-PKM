@@ -29,4 +29,6 @@ export class PagesPublicController {
     findOne(@Param('id') id: string) {
         return this.pagesService.findOne(id);
     }
+
+    
 }

@@ -21,7 +21,7 @@ export class StaticPagesService {
             throw new BadRequestException('Judul halaman wajib diisi');
         }
 
-        const { menu_id, ...pageData } = createStaticPageDto;
+        const { menu_id, force_replace, ...pageData } = createStaticPageDto;
 
         const staticPage = this.staticPageRepository.create({
             ...pageData,
@@ -30,6 +30,24 @@ export class StaticPagesService {
         if (menu_id && menu_id !== '' && menu_id !== '0' && menu_id !== null) {
             const menu = await this.menuRepository.findOneBy({ id: menu_id });
             if (!menu) throw new NotFoundException('Menu tidak ditemukan');
+
+            // Validasi: 1 menu hanya boleh terhubung ke 1 static page.
+            const existing = await this.staticPageRepository.findOne({
+                where: { menu: { id: menu_id } },
+                relations: ['menu'],
+            });
+            if (existing) {
+                if (force_replace) {
+                    existing.menu = null;
+                    await this.staticPageRepository.save(existing);
+                } else {
+                    throw new BadRequestException(
+                        `Menu ini sudah terhubung ke halaman statis (id: ${existing.id}, title: ${existing.title}). ` +
+                        `Pilih opsi ganti halaman untuk melanjutkan.`
+                    );
+                }
+            }
+
             staticPage.menu = menu;
         } else {
             staticPage.menu = null;
@@ -103,7 +121,7 @@ export class StaticPagesService {
         });
         if (!staticPage) throw new NotFoundException('Halaman statis tidak ditemukan');
 
-        const { menu_id, ...updateData } = updateStaticPageDto;
+        const { menu_id, force_replace, ...updateData } = updateStaticPageDto;
 
         if (menu_id !== undefined) {
             if (menu_id === null || menu_id === '' || menu_id === '0') {
@@ -111,6 +129,26 @@ export class StaticPagesService {
             } else {
                 const menu = await this.menuRepository.findOneBy({ id: menu_id });
                 if (!menu) throw new NotFoundException('Menu tidak ditemukan');
+
+                // Validasi: 1 menu hanya boleh terhubung ke 1 static page.
+                const existing = await this.staticPageRepository.findOne({
+                    where: { menu: { id: menu_id } },
+                    relations: ['menu'],
+                });
+
+                // Jika existing adalah static page yang sama, aman.
+                if (existing && existing.id !== staticPage.id) {
+                    if (force_replace) {
+                        existing.menu = null;
+                        await this.staticPageRepository.save(existing);
+                    } else {
+                        throw new BadRequestException(
+                            `Menu ini sudah terhubung ke halaman statis (id: ${existing.id}, title: ${existing.title}). ` +
+                            `Pilih opsi ganti halaman untuk melanjutkan.`
+                        );
+                    }
+                }
+
                 staticPage.menu = menu;
             }
         }
@@ -123,5 +161,28 @@ export class StaticPagesService {
         const result = await this.staticPageRepository.delete(id);
         if (result.affected === 0) throw new NotFoundException('Halaman statis tidak ditemukan');
         return { deleted: true };
+    }
+
+    // Check if menu already has a static page linked
+    async checkMenuLink(menuId: string) {
+        if (!menuId || menuId === '' || menuId === '0' || menuId === null) {
+            return null;
+        }
+
+        const staticPage = await this.staticPageRepository.findOne({
+            where: { menu: { id: menuId } },
+            relations: ['menu'],
+        });
+
+        if (!staticPage) {
+            return null;
+        }
+
+        return {
+            id: staticPage.id,
+            title: staticPage.title,
+            menu_id: staticPage.menu ? staticPage.menu.id : null,
+            menu_title: staticPage.menu ? staticPage.menu.title : null,
+        };
     }
 }
