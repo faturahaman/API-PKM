@@ -35,9 +35,11 @@ export class AuthService {
             level: admin.level,
         };
 
+        const token = await this.jwtService.signAsync(payload);
+
+        await this.adminsService.updateCurrentToken(admin.id, token);
         return {
-            access_token: await this.jwtService.signAsync(payload),
+            access_token: token,
         };
     }
-
 }

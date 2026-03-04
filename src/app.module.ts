@@ -22,6 +22,7 @@ import { PuskesmasInfoModule } from './puskesmas-info/puskesmas-info.module';
 import { UploadAdminController } from './upload/upload.controller';
 import { EmailModule } from './email/email.module';
 import { RecaptchaModule } from './common/recaptcha/recaptcha.module';
+import { LogactivityModule } from './logactivity/logactivity.module';
 
 @Module({
   imports: [
@@ -57,6 +58,7 @@ import { RecaptchaModule } from './common/recaptcha/recaptcha.module';
     StaticPagesModule,
     PuskesmasInfoModule,
     EmailModule,
+    LogactivityModule,
   ],
   controllers: [AppController, UploadAdminController],
   providers: [AppService],

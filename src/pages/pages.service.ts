@@ -20,7 +20,7 @@ export class PagesService {
             throw new BadRequestException('Judul halaman wajib diisi');
         }
 
-        const { menu_id, ...pageData } = createPageDto;
+        const { menu_id, force_replace, ...pageData } = createPageDto;
 
         const page = this.pageRepository.create({
             ...pageData,
@@ -31,6 +31,24 @@ export class PagesService {
         if (menu_id && menu_id !== '' && menu_id !== '0' && menu_id !== null) {
             const menu = await this.menuRepository.findOneBy({ id: menu_id });
             if (!menu) throw new NotFoundException('Menu tidak ditemukan');
+
+            // Validasi: Jika menu sudah memiliki page, tipe page baru harus SAMA dengan tipe yang sudah ada.
+            const newPageType = createPageDto.type ?? 'halaman';
+            const existingPages = await this.pageRepository.find({
+                where: { menu: { id: menu_id } },
+            });
+
+            if (existingPages.length > 0) {
+                // Menu sudah punya page - cek apakah tipe sama
+                const existingType = existingPages[0].type;
+                if (existingType !== newPageType) {
+                    throw new BadRequestException(
+                        `Menu ini sudah memiliki halaman dengan tipe "${existingType}". ` +
+                        `Tidak boleh mencampur tipe halaman. Silakan pilih menu lain atau gunakan tipe yang sama.`
+                    );
+                }
+            }
+
             page.menu = menu;
         } else {
             page.menu = null;
@@ -142,7 +160,7 @@ export class PagesService {
         });
         if (!pageData) throw new NotFoundException('Halaman tidak ditemukan');
 
-        const { menu_id, ...updateData } = updatePageDto;
+        const { menu_id, force_replace, ...updateData } = updatePageDto;
 
         if (menu_id !== undefined) {
             if (menu_id === null || menu_id === '' || menu_id === '0') {
@@ -150,6 +168,27 @@ export class PagesService {
             } else {
                 const menu = await this.menuRepository.findOneBy({ id: menu_id });
                 if (!menu) throw new NotFoundException('Menu tidak ditemukan');
+
+                // Validasi: Jika menu sudah memiliki page, tipe page baru harus SAMA dengan tipe yang sudah ada.
+                const newPageType = updateData.type ?? pageData.type ?? 'halaman';
+                const existingPages = await this.pageRepository.find({
+                    where: { menu: { id: menu_id } },
+                });
+
+                if (existingPages.length > 0) {
+                    // Menu sudah punya page - cek apakah tipe sama (kecuali jika page yang diedit adalah page itu sendiri)
+                    const otherPages = existingPages.filter(p => p.id !== id);
+                    if (otherPages.length > 0) {
+                        const existingType = otherPages[0].type;
+                        if (existingType !== newPageType) {
+                            throw new BadRequestException(
+                                `Menu ini sudah memiliki halaman dengan tipe "${existingType}". ` +
+                                `Tidak boleh mencampur tipe halaman. Silakan pilih menu lain atau gunakan tipe yang sama.`
+                            );
+                        }
+                    }
+                }
+
                 pageData.menu = menu;
             }
         }
@@ -184,5 +223,35 @@ export class PagesService {
         const page = await this.pageRepository.findOne({ where: { title: data } });
         if (!page) throw new NotFoundException('Halaman tidak ditemukan');
         return page;
+    }
+
+    // Check if menu already has any pages linked, return all with their types
+    async checkMenuLink(menuId: string) {
+        if (!menuId || menuId === '' || menuId === '0' || menuId === null) {
+            return null;
+        }
+
+        const pages = await this.pageRepository.find({
+            where: { menu: { id: menuId } },
+            relations: ['menu'],
+            order: { createdAt: 'DESC' },
+        });
+
+        if (pages.length === 0) {
+            return null;
+        }
+
+        return {
+            hasPages: true,
+            pageCount: pages.length,
+            existingType: pages[0].type, // All pages should be same type
+            pages: pages.map(p => ({
+                id: p.id,
+                title: p.title,
+                type: p.type,
+            })),
+            menu_id: pages[0].menu ? pages[0].menu.id : null,
+            menu_title: pages[0].menu ? pages[0].menu.title : null,
+        };
     }
 }

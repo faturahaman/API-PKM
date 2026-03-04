@@ -38,6 +38,12 @@ export class StaticPagesAdminController {
         return this.staticPagesService.findAllAdmin(search, Number(page), Number(limit));
     }
 
+    // Check if menu already has a static page linked
+    @Get('check-menu')
+    checkMenuLink(@Query('menu_id') menuId: string) {
+        return this.staticPagesService.checkMenuLink(menuId);
+    }
+
     @Get(':id')
     findOne(@Param('id') id: string) {
         return this.staticPagesService.findOne(id);
