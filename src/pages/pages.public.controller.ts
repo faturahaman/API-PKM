@@ -16,8 +16,13 @@ export class PagesPublicController {
     }
 
     @Get('berita')
-    findBerita() {
-        return this.pagesService.findBerita();
+    findBerita(
+        @Query('page') page?: string,
+        @Query('limit') limit?: string,
+    ) {
+        const p = page ? parseInt(page) || 1 : undefined;
+        const l = limit ? parseInt(limit) || undefined : undefined;
+        return this.pagesService.findBerita(p, l);
     }
 
     @Get('menu/:menuId')

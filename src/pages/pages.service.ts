@@ -93,15 +93,38 @@ export class PagesService {
         });
     }
 
-    async findBerita() {
-        return this.pageRepository.find({
-            where: [
-                { menu: { slug: 'Berita' }, status: 1 },
-                { menu: { parent: { slug: 'Berita' } }, status: 1 },
-            ],
-            relations: ['menu', 'menu.parent'],
-            order: { createdAt: 'ASC' },
-        });
+    async findBerita(page?: number, limit?: number) {
+        // Step 1: Cari semua menu yang title-nya LIKE 'berita' (case-insensitive)
+        const beritaMenus = await this.menuRepository
+            .createQueryBuilder('menu')
+            .where('LOWER(menu.title) LIKE LOWER(:keyword)', { keyword: '%berita%' })
+            .getMany();
+
+        if (beritaMenus.length === 0) return [];
+
+        const beritaMenuIds = beritaMenus.map((m) => m.id);
+
+        // Step 2: Cari juga child menu yang parent-nya adalah menu berita tersebut
+        const childMenus = await this.menuRepository
+            .createQueryBuilder('menu')
+            .where('menu.parent_id IN (:...ids)', { ids: beritaMenuIds })
+            .getMany();
+
+        const allMenuIds = [...beritaMenuIds, ...childMenus.map((m) => m.id)];
+
+        // Step 3: Query pages yang menu_id-nya masuk dalam daftar allMenuIds
+        const query = this.pageRepository
+            .createQueryBuilder('page')
+            .leftJoinAndSelect('page.menu', 'menu')
+            .where('menu.id IN (:...menuIds)', { menuIds: allMenuIds })
+            .andWhere('page.status = :status', { status: 1 })
+            .orderBy('page.createdAt', 'DESC');
+
+        if (page !== undefined && limit !== undefined) {
+            query.skip((page - 1) * limit).take(limit);
+        }
+
+        return query.getMany();
     }
 
     async findOne(id: string) {
