@@ -1,4 +1,4 @@
-import { Controller, Get, Param } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { PagesService } from './pages.service';
 
 @Controller('pages')
@@ -26,8 +26,14 @@ export class PagesPublicController {
     }
 
     @Get('menu/:menuId/all')
-    findAllByMenuId(@Param('menuId') menuId: string) {
-        return this.pagesService.findAllByMenuId(menuId);
+    findAllByMenuId(
+        @Param('menuId') menuId: string,
+        @Query('page') page?: string,
+        @Query('limit') limit?: string
+    ) {
+        const p = parseInt(page || '1') || 1;
+        const l = parseInt(limit || '10') || 10;
+        return this.pagesService.findAllByMenuId(menuId, p, l);
     }
 
     @Get(':id')

@@ -11,6 +11,5 @@ export class CreateUserDto {
     password: string;
 
     @IsString()
-    @IsOptional()
-    recaptchaToken?: string;
+    recaptchaToken: string;
 }

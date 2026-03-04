@@ -21,9 +21,11 @@ import { StaticPagesModule } from './static-pages/static-pages.module';
 import { PuskesmasInfoModule } from './puskesmas-info/puskesmas-info.module';
 import { UploadAdminController } from './upload/upload.controller';
 import { EmailModule } from './email/email.module';
+import { RecaptchaModule } from './common/recaptcha/recaptcha.module';
 
 @Module({
   imports: [
+    RecaptchaModule,
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       useFactory: () => ({

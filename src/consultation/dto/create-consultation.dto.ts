@@ -20,4 +20,8 @@ export class CreateConsultationDto {
   @IsString()
   @SanitizeText()
   message: string;
+
+  @IsNotEmpty({ message: 'Mohon centang reCAPTCHA' })
+  @IsString()
+  recaptchaToken: string;
 }

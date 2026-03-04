@@ -4,16 +4,19 @@ import { Repository } from 'typeorm';
 import { Review } from './entity/review.entity';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
+import { RecaptchaService } from '../common/recaptcha/recaptcha.service';
 
 @Injectable()
 export class ReviewsService {
   constructor(
     @InjectRepository(Review)
     private reviewRepository: Repository<Review>,
+    private readonly recaptchaService: RecaptchaService,
   ) { }
 
   // Create (Bisa buat Public API)
   async create(createReviewDto: CreateReviewDto) {
+    await this.recaptchaService.verify(createReviewDto.recaptchaToken);
     const newReview = this.reviewRepository.create(createReviewDto);
     return this.reviewRepository.save(newReview);
   }

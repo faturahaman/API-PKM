@@ -5,6 +5,7 @@ import { Consultation } from './entity/consultation.entity';
 import { CreateConsultationDto } from './dto/create-consultation.dto';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
 import { EmailService } from '../email/email.service';
+import { RecaptchaService } from '../common/recaptcha/recaptcha.service';
 
 @Injectable()
 export class ConsultationService {
@@ -12,9 +13,11 @@ export class ConsultationService {
     @InjectRepository(Consultation)
     private consultationRepo: Repository<Consultation>,
     private readonly emailService: EmailService,
+    private readonly recaptchaService: RecaptchaService,
   ) { }
 
   async create(createDto: CreateConsultationDto) {
+    await this.recaptchaService.verify(createDto.recaptchaToken);
     const newConsultation = this.consultationRepo.create(createDto);
     return await this.consultationRepo.save(newConsultation);
   }

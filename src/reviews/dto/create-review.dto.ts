@@ -16,4 +16,8 @@ export class CreateReviewDto {
   @IsNotEmpty({ message: 'Kategori wajib dipilih' })
   @IsEnum(ReviewCategory, { message: 'Kategori tidak valid' })
   category: ReviewCategory;
+
+  @IsNotEmpty({ message: 'Mohon centang reCAPTCHA' })
+  @IsString()
+  recaptchaToken: string;
 }

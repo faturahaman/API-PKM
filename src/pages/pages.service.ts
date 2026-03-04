@@ -108,14 +108,23 @@ export class PagesService {
         return page;
     }
 
-    // Ambil SEMUA halaman aktif berdasarkan menu (untuk list dokumen)
-    async findAllByMenuId(menuId: string) {
-        const pages = await this.pageRepository.find({
-            where: { menu: { id: menuId }, status: 1 },
-            relations: ['menu'],
-            order: { createdAt: 'DESC' },
-        });
-        return pages;
+    // Ambil halaman aktif berdasarkan menu dengan pagination
+    async findAllByMenuId(menuId: string, page: number = 1, limit: number = 10) {
+        const query = this.pageRepository.createQueryBuilder('page');
+        query.leftJoinAndSelect('page.menu', 'menu');
+        query.where('menu.id = :menuId AND page.status = 1', { menuId });
+        query.orderBy('page.createdAt', 'DESC');
+
+        const total = await query.getCount();
+        query.skip((page - 1) * limit).take(limit);
+        const data = await query.getMany();
+
+        return {
+            data,
+            total,
+            page,
+            lastPage: Math.ceil(total / limit),
+        };
     }
 
     async findPublished() {
