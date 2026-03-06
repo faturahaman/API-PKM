@@ -45,28 +45,28 @@ export class VisitorService {
 
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
         const path = req.originalUrl || req.url;
-        
+
         // Ambil puskesmas_id dari konteks
         const puskesmasId = this.tenantContextService.getTenantId();
 
         try {
-            // [UPGRADE 3]: Hapus findOne(). Langsung hajar insert pakai QueryBuilder + orIgnore().
-            // Ini jauh lebih cepat dan kebal dari Race Condition asalkan lu udah pasang Unique Index di Entity.
-            await this.visitorRepositoryNative.createQueryBuilder()
-                .insert()
-                .into(Visitor)
-                .values({
-                  puskesmas_id: puskesmasId ?? undefined,
-                    ip_address: ipString,
-                    user_agent: userAgent,
-                    visit_date: today,
-                    path: path
-                })
-                .orIgnore() // Cegah error ER_DUP_ENTRY otomatis di level database
-                .execute();
+            // Gunakan repository biasa untuk insert (bypass tenant filtering untuk tracking)
+            // Langsung insert, ignore jika duplikat (berdasarkan unique index)
+            await this.visitorRepositoryNative.insert({
+                puskesmas_id: puskesmasId || undefined,
+                ip_address: ipString,
+                user_agent: userAgent,
+                visit_date: today,
+                path: path
+            });
 
             return { message: 'Visitor tracked successfully' };
-        } catch (err) {
+        } catch (err: any) {
+            // ER_DUP_ENTRY berarti visitor hari ini sudah ada (berdasarkan unique index)
+            // Ini bukan error, jadi jangan log sebagai error
+            if (err.code === 'ER_DUP_ENTRY') {
+                return { message: 'Visitor already tracked' };
+            }
             console.error('Error tracking visitor:', err);
             return { message: 'Failed to track visitor' };
         }
@@ -74,7 +74,7 @@ export class VisitorService {
 
     async findAll() {
         return await this.visitorRepository.find({
-            order: { id: 'DESC' } 
+            order: { id: 'DESC' }
         });
     }
 
@@ -93,7 +93,7 @@ export class VisitorService {
     async countByDay() {
         const tenantId = this.tenantContextService.getTenantId() || 'global';
         const today = new Date().toISOString().split('T')[0];
-        
+
         // [UPGRADE 4]: Tenant-Aware Caching
         const cacheKey = `visitor_count_day_${tenantId}_${today}`;
 
