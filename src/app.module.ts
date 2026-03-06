@@ -23,6 +23,11 @@ import { UploadAdminController } from './upload/upload.controller';
 import { EmailModule } from './email/email.module';
 import { RecaptchaModule } from './common/recaptcha/recaptcha.module';
 import { LogactivityModule } from './logactivity/logactivity.module';
+import { PuskesmasModule } from './puskesmas/puskesmas.module';
+import { TenantModule } from './common/tenant/tenant.module';
+import { StorageModule } from './common/storage/storage.module';
+import { KritikSaranModule } from './kritik-saran/kritik-saran.module';
+import { CacheModule } from '@nestjs/cache-manager';
 
 @Module({
   imports: [
@@ -38,6 +43,7 @@ import { LogactivityModule } from './logactivity/logactivity.module';
         database: process.env.DB_DATABASE,
         autoLoadEntities: true,
         synchronize: true,
+        dropSchema: false,
       }),
     }),
     AdminsModule,
@@ -59,6 +65,15 @@ import { LogactivityModule } from './logactivity/logactivity.module';
     PuskesmasInfoModule,
     EmailModule,
     LogactivityModule,
+    PuskesmasModule,
+    TenantModule,
+    StorageModule,
+    KritikSaranModule,
+    CacheModule.register({
+      isGlobal: true, // <-- Wajib biar gak usah import CacheModule di tiap module
+      ttl: 60000, // <-- NestJS Cache v2 ke atas pakai Milliseconds (60000 ms = 1 menit)
+      max: 100,
+    }),
   ],
   controllers: [AppController, UploadAdminController],
   providers: [AppService],

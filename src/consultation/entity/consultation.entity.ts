@@ -1,9 +1,14 @@
-import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, Column, PrimaryGeneratedColumn, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('consultations')
+@Index('idx_consultation_puskesmas_created', ['puskesmas_id', 'created_at'])
 export class Consultation {
   @PrimaryGeneratedColumn()
   id: number;
+
+  // Tenant isolation
+  @Column({ nullable: true })
+  puskesmas_id: string;
 
   @Column()
   username: string;

@@ -3,6 +3,12 @@ import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from 'src/admins/dto/create-user.dto';
+import { SwitchTenantDto } from './dto/switch-tenant.dto';
+import { JwtPayload } from 'src/types/jwt.interface';
+
+interface AuthenticatedRequest extends Request {
+  user?: JwtPayload;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -25,5 +31,13 @@ export class AuthController {
       secure: false,
     });
     return { statusCode: 200, message: 'Logout berhasil' };
+  }
+
+  @UseGuards(AuthGuard('jwt'))
+  @Post('switch-tenant')
+  @HttpCode(HttpStatus.OK)
+  switchTenant(@Request() req: AuthenticatedRequest, @Body() switchTenantDto: SwitchTenantDto) {
+    const user = req.user as JwtPayload;
+    return this.authService.switchTenant(user, switchTenantDto);
   }
 }

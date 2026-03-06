@@ -5,14 +5,24 @@ import { Gallery } from './entity/gallery.entity';
 import { Album } from '../album/entity/album.entity';
 import { CreateGalleryDto } from './dto/create-gallery.dto';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class GalleryService {
+  private galleryRepository: BaseTenantRepository<Gallery>;
+  private albumRepository: BaseTenantRepository<Album>;
+
   constructor(
     @InjectRepository(Gallery)
-    private galleryRepository: Repository<Gallery>,
+    galleryRepositoryNative: Repository<Gallery>,
     @InjectRepository(Album)
-    private albumRepository: Repository<Album>
-  ) { }
+    albumRepositoryNative: Repository<Album>,
+    private readonly tenantContextService: TenantContextService
+  ) {
+    this.galleryRepository = new BaseTenantRepository(galleryRepositoryNative, tenantContextService);
+    this.albumRepository = new BaseTenantRepository(albumRepositoryNative, tenantContextService);
+  }
 
   async create(createGalleryDto: CreateGalleryDto, imagePath: string) {
     const newGallery = this.galleryRepository.create({
@@ -74,11 +84,11 @@ export class GalleryService {
   }
 
   async updateAlbumId(photoIds: string[], albumId: string) {
-    await this.galleryRepository.createQueryBuilder()
-      .update(Gallery)
-      .set({ album_id: albumId })
-      .whereInIds(photoIds)
-      .execute();
+    // Use tenant-aware update method
+    await this.galleryRepository.update(
+      { id: { in: photoIds } } as any,
+      { album_id: albumId }
+    );
 
     await this.syncAlbumData(albumId);
 
@@ -86,21 +96,19 @@ export class GalleryService {
   }
 
   async resetAlbumId(albumId: string) {
-    return this.galleryRepository
-      .createQueryBuilder()
-      .update(Gallery)
-      .set({ album_id: () => 'NULL' })
-      .where('album_id = :albumId', { albumId })
-      .execute();
+    // Use tenant-aware update method
+    return await this.galleryRepository.update(
+      { album_id: albumId } as any,
+      { album_id: null } as any
+    );
   }
 
   async removeFromAlbum(photoIds: string[], albumId: string) {
-    await this.galleryRepository
-      .createQueryBuilder()
-      .update(Gallery)
-      .set({ album_id: () => 'NULL' })
-      .whereInIds(photoIds)
-      .execute();
+    // Use tenant-aware update method
+    await this.galleryRepository.update(
+      { id: { in: photoIds } } as any,
+      { album_id: null } as any
+    );
 
     await this.syncAlbumData(albumId);
     return { success: true };

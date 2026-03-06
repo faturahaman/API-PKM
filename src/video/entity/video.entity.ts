@@ -1,10 +1,15 @@
 
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('videos')
+@Index('idx_video_puskesmas_created', ['puskesmas_id', 'upload_date'])
 export class Video {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    // Tenant isolation
+    @Column({ nullable: true })
+    puskesmas_id: string;
 
     @Column()
     video_title: string;

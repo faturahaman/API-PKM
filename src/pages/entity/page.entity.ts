@@ -1,13 +1,18 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Menu } from '../../menus/entity/menu.entity';
 
 @Entity('pages')
+@Index('idx_pages_puskesmas_created', ['puskesmas_id', 'createdAt'])
 export class Page {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column({ nullable: true })
     user_id: string;
+
+    // Tenant isolation - required for multi-tenancy
+    @Column({ nullable: true })
+    puskesmas_id: string;
 
     @Column()
     title: string;

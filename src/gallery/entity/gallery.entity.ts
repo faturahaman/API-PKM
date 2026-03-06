@@ -1,11 +1,16 @@
 
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Album } from '../../album/entity/album.entity';
 
 @Entity('gallery')
+@Index('idx_gallery_puskesmas_created', ['puskesmas_id', 'upload_date'])
 export class Gallery {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    // Tenant isolation
+    @Column({ nullable: true })
+    puskesmas_id: string;
 
     @Column()
     image_title: string;

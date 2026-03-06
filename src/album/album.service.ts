@@ -5,13 +5,21 @@ import { Album } from './entity/album.entity';
 import { GalleryService } from '../gallery/gallery.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class AlbumService {
+  private albumRepository: BaseTenantRepository<Album>;
+
   constructor(
     @InjectRepository(Album)
-    private albumRepository: Repository<Album>,
+    albumRepositoryNative: Repository<Album>,
     private galleryService: GalleryService,
-  ) { }
+    private readonly tenantContextService: TenantContextService
+  ) {
+    this.albumRepository = new BaseTenantRepository(albumRepositoryNative, tenantContextService);
+  }
 
   async create(createAlbumDto: CreateAlbumDto) {
     const { photo_ids, ...albumData } = createAlbumDto;

@@ -5,12 +5,20 @@ import { Banner } from './entity/banner.entity';
 import { CreateBannerDto } from './dto/create-banner.dto';
 import { UpdateBannerDto } from './dto/update-banner.dto';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class BannerService {
+  private bannerRepository: BaseTenantRepository<Banner>;
+
   constructor(
     @InjectRepository(Banner)
-    private bannerRepository: Repository<Banner>,
-  ) { }
+    bannerRepositoryNative: Repository<Banner>,
+    private readonly tenantContextService: TenantContextService,
+  ) {
+    this.bannerRepository = new BaseTenantRepository(bannerRepositoryNative, tenantContextService);
+  }
 
   // TERIMA FILE DISINI
   async create(createBannerDto: CreateBannerDto, file: Express.Multer.File): Promise<Banner> {

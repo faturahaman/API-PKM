@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Post, Body, Req } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post, Body, Req, UseInterceptors } from '@nestjs/common';
 import { VisitorService } from './visitor.service';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
 import type { Request } from 'express';

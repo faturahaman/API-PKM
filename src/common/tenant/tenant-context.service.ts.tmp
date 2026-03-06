@@ -1,0 +1,39 @@
+import { Injectable, Scope, ForbiddenException } from '@nestjs/common';
+import { AsyncLocalStorage } from 'async_hooks';
+
+export interface TenantContextData {
+    tenantId: string | null;
+    userId: string;
+    role: string;
+    isSuperAdmin: boolean;
+}
+
+@Injectable({ scope: Scope.DEFAULT }) // Singleton now!
+export class TenantContextService {
+    private static readonly storage = new AsyncLocalStorage<TenantContextData>();
+
+    /**
+     * Set the tenant context for the current request
+     * This should be called early in the request lifecycle (e.g. by an interceptor or middleware)
+     */
+    runWithContext(data: TenantContextData, next: () => any): any {
+        return TenantContextService.storage.run(data, next);
+    }
+
+    /**
+     * For use when we can't wrap the execution (traditional NestJS flow)
+     * We'll need to set it manually if we use interceptors, but wait...
+     * Interceptors can wrap the handler!
+     */
+
+    setTenantContext(data: TenantContextData): void {
+        // Warning: This only works if we are already inside a run() block
+        // or if we use a different strategy. 
+        // Actually, NestJS Interceptors can't easily use run() for the REST OF THE REQUEST.
+        // So we'll use a slightly different approach: a Map-based storage tied to the request object if needed,
+        // or just use Middleware to start the AsyncLocalStorage.
+    }
+
+    // Let's use a simpler Singleton approach if we can't reliably use ALS without Middleware.
+    // Actually, I'll use Middleware to initialize ALS.
+}

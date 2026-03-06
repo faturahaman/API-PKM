@@ -5,12 +5,20 @@ import { Agenda } from './entity/agenda.entity';
 import { CreateAgendaDto } from './dto/create-agenda.dto';
 import { UpdateAgendaDto } from './dto/update-agenda.dto';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class AgendaService {
+  private agendaRepository: BaseTenantRepository<Agenda>;
+
   constructor(
     @InjectRepository(Agenda)
-    private agendaRepository: Repository<Agenda>,
-  ) { }
+    agendaRepositoryNative: Repository<Agenda>,
+    private readonly tenantContextService: TenantContextService,
+  ) {
+    this.agendaRepository = new BaseTenantRepository(agendaRepositoryNative, tenantContextService);
+  }
 
   async create(createAgendaDto: CreateAgendaDto) {
     const newAgenda = this.agendaRepository.create({

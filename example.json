@@ -172,3 +172,21 @@
     }
   }
 }
+
+bisa analisa gak bre project gw ini, gw mao nambahin fitur biar dia multi user, nah dia itu ingin biar per pkm punya setinggan masing masing, page masing masing, dan juga informasi web masing masing. nah jadinya bakal ada 2 level :
+
+operator dan super admin.
+
+operator itu adalah nant`i yg mengurus informasi pkm nya masing masing, jadi tiap puskesmas punya operatornya sendiri. dia bisa akses kayak:
+
+-gallery,album,video
+-page,menu,
+-agenda
+-pengunjung (pkm itu sendiri).
+-kritik dan saran
+-konsultasi, dan dashboard utama.
+
+
+superadmin
+
+sesuai namanya dia bisa memantau tiap pergerakan setiap operator, nah superadmin ini bisa berpindah pindah akses dari pkm a b c d sesuka hati untuk memantau. nah si super admin bakalan bisa melihat setiap perubahan apa saja yg terjadi dalam setiap website dalam logactivity. dan monitoring. 

@@ -4,12 +4,20 @@ import { Repository } from 'typeorm';
 import { Video } from './entity/video.entity';
 import { CreateVideoDto } from './dto/create-video.dto';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class VideoService {
+  private videoRepository: BaseTenantRepository<Video>;
+
   constructor(
     @InjectRepository(Video)
-    private videoRepository: Repository<Video>,
-  ) { }
+    videoRepositoryNative: Repository<Video>,
+    private readonly tenantContextService: TenantContextService
+  ) {
+    this.videoRepository = new BaseTenantRepository(videoRepositoryNative, tenantContextService);
+  }
 
   async create(createVideoDto: CreateVideoDto, file?: Express.Multer.File) {
     const { is_embed, ...videoData } = createVideoDto;

@@ -1,17 +1,30 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { Repository, Between } from 'typeorm';
 import { Visitor } from './entity/visitor.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
 import { Request } from 'express';
 import { isbot } from 'isbot';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import type { Cache } from 'cache-manager';
+
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 
 @Injectable()
 export class VisitorService {
+    private visitorRepository: BaseTenantRepository<Visitor>;
+
     constructor(
+        // [UPGRADE 1]: Tambahin `private readonly` biar native repo bisa dipakai buat Raw Query Builder
         @InjectRepository(Visitor)
-        private readonly visitorRepository: Repository<Visitor>,
-    ) { }
+        private readonly visitorRepositoryNative: Repository<Visitor>,
+        private readonly tenantContextService: TenantContextService,
+        // [UPGRADE 2]: Inject Cache Manager ke dalam Service
+        @Inject(CACHE_MANAGER) private cacheManager: Cache
+    ) {
+        this.visitorRepository = new BaseTenantRepository(visitorRepositoryNative, tenantContextService);
+    }
 
     // Manual Create 
     async create(dto: CreateVisitorDto) {
@@ -31,79 +44,111 @@ export class VisitorService {
         }
 
         const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-        const existingVisitorToday = await this.visitorRepository.findOne({
-            where: {
-                ip_address: ipString,
-                visit_date: today,
-            },
-        });
-
-        if (existingVisitorToday) {
-            return { message: 'Visitor already tracked today.' };
-        }
-
         const path = req.originalUrl || req.url;
-
-        const visitor = this.visitorRepository.create({
-            ip_address: ipString,
-            user_agent: userAgent,
-            visit_date: today,
-            path: path,
-        });
+        
+        // Ambil puskesmas_id dari konteks
+        const puskesmasId = this.tenantContextService.getTenantId();
 
         try {
-            return await this.visitorRepository.save(visitor);
+            // [UPGRADE 3]: Hapus findOne(). Langsung hajar insert pakai QueryBuilder + orIgnore().
+            // Ini jauh lebih cepat dan kebal dari Race Condition asalkan lu udah pasang Unique Index di Entity.
+            await this.visitorRepositoryNative.createQueryBuilder()
+                .insert()
+                .into(Visitor)
+                .values({
+                  puskesmas_id: puskesmasId ?? undefined,
+                    ip_address: ipString,
+                    user_agent: userAgent,
+                    visit_date: today,
+                    path: path
+                })
+                .orIgnore() // Cegah error ER_DUP_ENTRY otomatis di level database
+                .execute();
+
+            return { message: 'Visitor tracked successfully' };
         } catch (err) {
-            // Race condition: another request already inserted for this IP+date
-            if (err?.code === 'ER_DUP_ENTRY') {
-                return { message: 'Visitor already tracked today.' };
-            }
-            throw err;
+            console.error('Error tracking visitor:', err);
+            return { message: 'Failed to track visitor' };
         }
     }
 
-
     async findAll() {
         return await this.visitorRepository.find({
-            order: { created_at: 'DESC' }
+            order: { id: 'DESC' } 
         });
     }
 
     async countAll() {
-        return await this.visitorRepository.count();
+        const tenantId = this.tenantContextService.getTenantId() || 'global';
+        const cacheKey = `visitor_count_all_${tenantId}`;
+
+        const cached = await this.cacheManager.get<number>(cacheKey);
+        if (cached !== undefined && cached !== null) return cached;
+
+        const result = await this.visitorRepository.count();
+        await this.cacheManager.set(cacheKey, result, 3600000); // Cache 1 Jam
+        return result;
     }
 
     async countByDay() {
+        const tenantId = this.tenantContextService.getTenantId() || 'global';
         const today = new Date().toISOString().split('T')[0];
-        return await this.visitorRepository.count({
+        
+        // [UPGRADE 4]: Tenant-Aware Caching
+        const cacheKey = `visitor_count_day_${tenantId}_${today}`;
+
+        const cached = await this.cacheManager.get<number>(cacheKey);
+        if (cached !== undefined && cached !== null) return cached;
+
+        const result = await this.visitorRepository.count({
             where: {
                 visit_date: today,
             },
         });
+
+        await this.cacheManager.set(cacheKey, result, 300000); // Khusus harian, cache 5 menit aja biar admin liat update
+        return result;
     }
 
     async countByMonth() {
+        const tenantId = this.tenantContextService.getTenantId() || 'global';
         const date = new Date();
         const start = new Date(date.getFullYear(), date.getMonth(), 1).toISOString().split('T')[0];
         const end = new Date(date.getFullYear(), date.getMonth() + 1, 0).toISOString().split('T')[0];
 
-        return await this.visitorRepository.count({
+        const cacheKey = `visitor_count_month_${tenantId}_${start}`;
+
+        const cached = await this.cacheManager.get<number>(cacheKey);
+        if (cached !== undefined && cached !== null) return cached;
+
+        const result = await this.visitorRepository.count({
             where: {
                 visit_date: Between(start, end),
             },
         });
+
+        await this.cacheManager.set(cacheKey, result, 3600000); // Cache 1 Jam
+        return result;
     }
 
     async countByYear() {
+        const tenantId = this.tenantContextService.getTenantId() || 'global';
         const date = new Date();
         const start = new Date(date.getFullYear(), 0, 1).toISOString().split('T')[0];
         const end = new Date(date.getFullYear(), 11, 31).toISOString().split('T')[0];
 
-        return await this.visitorRepository.count({
+        const cacheKey = `visitor_count_year_${tenantId}_${date.getFullYear()}`;
+
+        const cached = await this.cacheManager.get<number>(cacheKey);
+        if (cached !== undefined && cached !== null) return cached;
+
+        const result = await this.visitorRepository.count({
             where: {
                 visit_date: Between(start, end),
             },
         });
+
+        await this.cacheManager.set(cacheKey, result, 3600000); // Cache 1 Jam
+        return result;
     }
 }

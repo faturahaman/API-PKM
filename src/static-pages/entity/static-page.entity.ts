@@ -1,10 +1,15 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn, Index } from 'typeorm';
 import { Menu } from '../../menus/entity/menu.entity';
 
 @Entity('static_pages')
+@Index('idx_static_page_puskesmas_created', ['puskesmas_id', 'createdAt'])
 export class StaticPage {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    // Tenant isolation
+    @Column({ nullable: true })
+    puskesmas_id: string;
 
     @Column()
     title: string;

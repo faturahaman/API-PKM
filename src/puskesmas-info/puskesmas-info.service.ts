@@ -4,12 +4,20 @@ import { Repository } from 'typeorm';
 import { PuskesmasInfo } from './entity/puskesmas-info.entity';
 import { CreatePuskesmasInfoDto, UpdatePuskesmasInfoDto } from './dto/puskesmas-info.dto';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class PuskesmasInfoService {
+    private repository: BaseTenantRepository<PuskesmasInfo>;
+
     constructor(
         @InjectRepository(PuskesmasInfo)
-        private readonly repository: Repository<PuskesmasInfo>,
-    ) { }
+        repositoryNative: Repository<PuskesmasInfo>,
+        private readonly tenantContextService: TenantContextService
+    ) {
+        this.repository = new BaseTenantRepository(repositoryNative, tenantContextService);
+    }
 
     async getInfo(): Promise<PuskesmasInfo> {
         const info = await this.repository.find();

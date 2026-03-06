@@ -6,13 +6,21 @@ import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { RecaptchaService } from '../common/recaptcha/recaptcha.service';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class ReviewsService {
+  private reviewRepository: BaseTenantRepository<Review>;
+
   constructor(
     @InjectRepository(Review)
-    private reviewRepository: Repository<Review>,
+    reviewRepositoryNative: Repository<Review>,
     private readonly recaptchaService: RecaptchaService,
-  ) { }
+    private readonly tenantContextService: TenantContextService
+  ) {
+    this.reviewRepository = new BaseTenantRepository(reviewRepositoryNative, tenantContextService);
+  }
 
   // Create (Bisa buat Public API)
   async create(createReviewDto: CreateReviewDto) {

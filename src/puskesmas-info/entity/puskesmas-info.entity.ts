@@ -1,9 +1,14 @@
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('web_info')
+@Index('idx_puskesmas_info_puskesmas', ['puskesmas_id'])
 export class PuskesmasInfo {
     @PrimaryGeneratedColumn()
     id: number;
+
+    // Tenant isolation - this is the primary way to link info to tenant
+    @Column({ nullable: true })
+    puskesmas_id: string;
 
     @Column()
     web_title: string;

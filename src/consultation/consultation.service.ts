@@ -7,14 +7,22 @@ import { UpdateConsultationDto } from './dto/update-consultation.dto';
 import { EmailService } from '../email/email.service';
 import { RecaptchaService } from '../common/recaptcha/recaptcha.service';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class ConsultationService {
+  private consultationRepo: BaseTenantRepository<Consultation>;
+
   constructor(
     @InjectRepository(Consultation)
-    private consultationRepo: Repository<Consultation>,
+    consultationRepoNative: Repository<Consultation>,
     private readonly emailService: EmailService,
     private readonly recaptchaService: RecaptchaService,
-  ) { }
+    private readonly tenantContextService: TenantContextService
+  ) {
+    this.consultationRepo = new BaseTenantRepository(consultationRepoNative, tenantContextService);
+  }
 
   async create(createDto: CreateConsultationDto) {
     await this.recaptchaService.verify(createDto.recaptchaToken);

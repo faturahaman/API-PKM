@@ -1,10 +1,16 @@
-import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn, JoinColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, ManyToOne, OneToMany, CreateDateColumn, UpdateDateColumn, JoinColumn, Index } from 'typeorm';
 import { MenuType } from '../enums/menu-type.enum';
 
 @Entity('menus')
+@Index('idx_menu_puskesmas_created', ['puskesmas_id', 'createdAt'])
+@Index('idx_menu_puskesmas_slug', ['puskesmas_id', 'slug'], { unique: true })
 export class Menu {
   @PrimaryGeneratedColumn('uuid')
   id: string;
+
+  // Tenant isolation
+  @Column({ nullable: true })
+  puskesmas_id: string;
 
   @Column()
   title: string;
@@ -28,7 +34,7 @@ export class Menu {
   @OneToMany(() => Menu, (menu) => menu.parent)
   children: Menu[];
 
-  @Column({ unique: true })
+  @Column()
   slug: string;
 
   @CreateDateColumn()

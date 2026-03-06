@@ -1,5 +1,5 @@
 
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 export enum ReviewCategory {
     PELAYANAN = 'Pelayanan',
@@ -9,9 +9,14 @@ export enum ReviewCategory {
 }
 
 @Entity('reviews')
+@Index('idx_review_puskesmas_created', ['puskesmas_id', 'created_at'])
 export class Review {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    // Tenant isolation
+    @Column({ nullable: true })
+    puskesmas_id: string;
 
     @Column({ default: 'Anonim' })
     username: string;

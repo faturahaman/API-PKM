@@ -7,14 +7,24 @@ import { CreateStaticPageDto } from './dto/create-static-page.dto';
 import { UpdateStaticPageDto } from './dto/update-static-page.dto';
 import { createMulterOptions } from '../common/multer.utils';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class StaticPagesService {
+    private staticPageRepository: BaseTenantRepository<StaticPage>;
+    private menuRepository: BaseTenantRepository<Menu>;
+
     constructor(
         @InjectRepository(StaticPage)
-        private staticPageRepository: Repository<StaticPage>,
+        staticPageRepositoryNative: Repository<StaticPage>,
         @InjectRepository(Menu)
-        private menuRepository: Repository<Menu>,
-    ) { }
+        menuRepositoryNative: Repository<Menu>,
+        private readonly tenantContextService: TenantContextService
+    ) {
+        this.staticPageRepository = new BaseTenantRepository(staticPageRepositoryNative, tenantContextService);
+        this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
+    }
 
     async create(createStaticPageDto: CreateStaticPageDto, image?: Express.Multer.File) {
         if (!createStaticPageDto.title || createStaticPageDto.title.trim() === '') {

@@ -6,14 +6,24 @@ import { Menu } from '../menus/entity/menu.entity';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class PagesService {
+    private pageRepository: BaseTenantRepository<Page>;
+    private menuRepository: BaseTenantRepository<Menu>;
+
     constructor(
         @InjectRepository(Page)
-        private pageRepository: Repository<Page>,
+        pageRepositoryNative: Repository<Page>,
         @InjectRepository(Menu)
-        private menuRepository: Repository<Menu>,
-    ) { }
+        menuRepositoryNative: Repository<Menu>,
+        private readonly tenantContextService: TenantContextService,
+    ) {
+        this.pageRepository = new BaseTenantRepository(pageRepositoryNative, tenantContextService);
+        this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
+    }
 
     async create(createPageDto: CreatePageDto, image?: Express.Multer.File, document?: Express.Multer.File) {
         if (!createPageDto.title || createPageDto.title.trim() === '') {
@@ -62,7 +72,7 @@ export class PagesService {
         query.leftJoinAndSelect('page.menu', 'menu');
 
         if (search) {
-            query.where('page.title LIKE :search', { search: `%${search}%` });
+            query.andWhere('page.title LIKE :search', { search: `%${search}%` });
         }
 
         query.orderBy('page.createdAt', 'DESC');
@@ -97,7 +107,7 @@ export class PagesService {
         // Step 1: Cari semua menu yang title-nya LIKE 'berita' (case-insensitive)
         const beritaMenus = await this.menuRepository
             .createQueryBuilder('menu')
-            .where('LOWER(menu.title) LIKE LOWER(:keyword)', { keyword: '%berita%' })
+            .andWhere('LOWER(menu.title) LIKE LOWER(:keyword)', { keyword: '%berita%' })
             .getMany();
 
         if (beritaMenus.length === 0) return [];
@@ -107,7 +117,7 @@ export class PagesService {
         // Step 2: Cari juga child menu yang parent-nya adalah menu berita tersebut
         const childMenus = await this.menuRepository
             .createQueryBuilder('menu')
-            .where('menu.parent_id IN (:...ids)', { ids: beritaMenuIds })
+            .andWhere('menu.parent_id IN (:...ids)', { ids: beritaMenuIds })
             .getMany();
 
         const allMenuIds = [...beritaMenuIds, ...childMenus.map((m) => m.id)];
@@ -116,7 +126,7 @@ export class PagesService {
         const query = this.pageRepository
             .createQueryBuilder('page')
             .leftJoinAndSelect('page.menu', 'menu')
-            .where('menu.id IN (:...menuIds)', { menuIds: allMenuIds })
+            .andWhere('menu.id IN (:...menuIds)', { menuIds: allMenuIds })
             .andWhere('page.status = :status', { status: 1 })
             .orderBy('page.createdAt', 'DESC');
 
@@ -153,7 +163,7 @@ export class PagesService {
     async findAllByMenuId(menuId: string, page: number = 1, limit: number = 10) {
         const query = this.pageRepository.createQueryBuilder('page');
         query.leftJoinAndSelect('page.menu', 'menu');
-        query.where('menu.id = :menuId AND page.status = 1', { menuId });
+        query.andWhere('menu.id = :menuId AND page.status = 1', { menuId });
         query.orderBy('page.createdAt', 'DESC');
 
         const total = await query.getCount();

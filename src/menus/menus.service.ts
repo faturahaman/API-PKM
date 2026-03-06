@@ -6,12 +6,20 @@ import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
 import slugify from 'slugify';
 
+import { TenantContextService } from '../common/tenant/tenant-context.service';
+import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+
 @Injectable()
 export class MenusService {
+  private menuRepository: BaseTenantRepository<Menu>;
+
   constructor(
     @InjectRepository(Menu)
-    private menuRepository: Repository<Menu>,
-  ) { }
+    menuRepositoryNative: Repository<Menu>,
+    private readonly tenantContextService: TenantContextService,
+  ) {
+    this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
+  }
 
   async create(createMenuDto: CreateMenuDto) {
     const { parent_id, title, ...menuData } = createMenuDto;

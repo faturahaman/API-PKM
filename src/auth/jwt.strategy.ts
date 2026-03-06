@@ -26,13 +26,23 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const admin = await this.adminService.findOne(payload.sub);
     if (!admin) {
+      console.warn(`[JwtStrategy] Admin not found for ID: ${payload.sub}`);
       throw new UnauthorizedException('Admin tidak ditemukan.');
     }
 
     if (admin.current_token !== token) {
+      console.warn(`[JwtStrategy] Token mismatch for ${admin.name}. Incoming: ${token?.substring(0, 20)}..., DB: ${admin.current_token?.substring(0, 20)}...`);
       throw new UnauthorizedException('Sesi berakhir karena akun ini telah login di perangkat lain.');
     }
 
-    return admin;
+    console.log(`[JwtStrategy] Token validated for: ${admin.name}`);
+    // Return the full user object with tenant information
+    return {
+      sub: admin.id,
+      name: admin.name,
+      role: admin.role,
+      puskesmas_id: admin.puskesmas_id,
+      active_tenant: payload.active_tenant,
+    };
   }
 }

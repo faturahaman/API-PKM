@@ -1,10 +1,15 @@
 
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, Index } from 'typeorm';
 
 @Entity('agenda')
+@Index('idx_agenda_puskesmas_created', ['puskesmas_id', 'created_at'])
 export class Agenda {
     @PrimaryGeneratedColumn('uuid')
     id: string;
+
+    // Tenant isolation
+    @Column({ nullable: true })
+    puskesmas_id: string;
 
     @Column()
     activity_name: string;
