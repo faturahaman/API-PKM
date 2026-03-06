@@ -1,7 +1,7 @@
 import {
     Controller, Get, Post, Body, Param, Query,
     UseInterceptors, UploadedFile, BadRequestException,
-    UseGuards, Delete, Put
+    UseGuards, Delete, Patch
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -43,13 +43,13 @@ export class GalleryAdminController {
     }
 
     // Update foto masuk ke album mana
-    @Put('album')
+    @Patch('album')
     updateAlbum(@Body() body: { photo_ids: string[], album_id: string }) {
         return this.galleryService.updateAlbumId(body.photo_ids, body.album_id);
     }
 
     // Hapus foto dari album (set album_id ke null)
-    @Put('remove-from-album')
+    @Patch('remove-from-album')
     removeFromAlbum(@Body() body: { photo_ids: string[], album_id: string }) {
         return this.galleryService.removeFromAlbum(body.photo_ids, body.album_id);
     }

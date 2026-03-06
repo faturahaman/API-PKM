@@ -1,5 +1,5 @@
-import { 
-  Controller, Get, Post, Body, Param, Delete, Put, Query, UseGuards 
+import {
+  Controller, Get, Post, Body, Param, Delete, Patch, Query, UseGuards
 } from '@nestjs/common';
 import { AgendaService } from './agenda.service';
 import { CreateAgendaDto } from './dto/create-agenda.dto';
@@ -9,7 +9,7 @@ import { AuthGuard } from '@nestjs/passport';
 @UseGuards(AuthGuard('jwt'))
 @Controller('admin/agenda')
 export class AgendaAdminController {
-  constructor(private readonly agendaService: AgendaService) {}
+  constructor(private readonly agendaService: AgendaService) { }
 
   @Post()
   create(@Body() createAgendaDto: CreateAgendaDto) {
@@ -31,7 +31,7 @@ export class AgendaAdminController {
     return this.agendaService.findOne(id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   update(@Param('id') id: string, @Body() updateData: UpdateAgendaDto) {
     return this.agendaService.update(id, updateData);
   }

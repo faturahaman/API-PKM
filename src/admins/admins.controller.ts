@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Put, UseGuards, Request, UseInterceptors,
+  Controller, Get, Patch, UseGuards, Request, UseInterceptors,
   UploadedFile, Body
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
@@ -25,7 +25,7 @@ export class AdminsController {
     return user;
   }
 
-  @Put('profile')
+  @Patch('profile')
   @UseInterceptors(FileInterceptor('photo', createMulterOptions('profile')))
   async updateProfile(
     @Request() req: any,

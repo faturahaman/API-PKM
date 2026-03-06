@@ -1,5 +1,5 @@
 import {
-    Controller, Get, Body, Put, UseGuards,
+    Controller, Get, Body, Patch, UseGuards,
     UseInterceptors, UploadedFile
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,7 +18,7 @@ export class PuskesmasInfoAdminController {
         return this.service.getInfo();
     }
 
-    @Put()
+    @Patch()
     @UseInterceptors(FileInterceptor('logo', createMulterOptions('web-info')))
     update(
         @Body() dto: UpdatePuskesmasInfoDto,

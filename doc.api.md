@@ -98,6 +98,8 @@ Base URL: `http://localhost:3000` (or as configured in environment)
 - **Query Params:**
     - `page`: number
     - `limit`: number
+    - `search`: string (optional, filters title case-insensitively)
+    - `status`: string (optional, currently unused; reserved for future)
 
 ### Get One Album
 - **Method:** `GET`

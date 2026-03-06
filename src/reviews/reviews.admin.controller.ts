@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Body, Param, Put, Query, UseGuards
+  Controller, Get, Body, Param, Patch, Query, UseGuards
 } from '@nestjs/common';
 import { ReviewsService } from './reviews.service';
 import { UpdateReviewDto } from './dto/update-review.dto';
@@ -23,7 +23,7 @@ export class ReviewsAdminController {
   }
 
   // Update Status Publish/Unpublish
-  @Put(':id')
+  @Patch(':id')
   updateStatus(
     @Param('id') id: string,
     @Body() updateDto: UpdateReviewDto

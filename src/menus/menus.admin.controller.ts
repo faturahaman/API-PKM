@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query } from '@nestjs/common';
 import { MenusService } from './menus.service';
 import { CreateMenuDto } from './dto/create-menu.dto';
 import { UpdateMenuDto } from './dto/update-menu.dto';
@@ -15,8 +15,13 @@ export class MenusAdminController {
   }
 
   @Get()
-  findAll() {
-    return this.menusService.findAllAdmin();
+  findAll(
+    @Query('search') search?: string,
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('type') type?: string,
+  ) {
+    return this.menusService.findAllAdmin(search, Number(page), Number(limit), type);
   }
 
   @Get(':id')
@@ -33,6 +38,7 @@ export class MenusAdminController {
   remove(@Param('id') id: string) {
     return this.menusService.remove(id);
   }
+
   @Patch(':id/toggle-status')
   toggleStatus(@Param('id') id: string) {
     return this.menusService.toggleStatus(id)
