@@ -1,6 +1,6 @@
 import { Injectable, CanActivate, ExecutionContext, ForbiddenException } from '@nestjs/common';
 import { TenantContextService } from './tenant-context.service';
-
+import { AdminRole } from '../../admins/entity/admin.entity';
 /**
  * Tenant Guard - Fail-Safe Protection
  * 
@@ -12,6 +12,7 @@ import { TenantContextService } from './tenant-context.service';
  * - Apply to controllers or routes that require tenant isolation
  * - Super Admin endpoints can bypass this by setting requireTenant: false
  */
+
 @Injectable()
 export class TenantGuard implements CanActivate {
     constructor(private readonly tenantContextService: TenantContextService) { }
@@ -33,7 +34,7 @@ export class TenantGuard implements CanActivate {
 
         // Super Admin can access without tenant context (they can view all)
         // But we still set the context for consistency
-        if (role === 'SUPER_ADMIN') {
+        if (role === AdminRole.SUPER_ADMIN) {
             return true;
         }
 

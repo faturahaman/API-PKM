@@ -43,7 +43,7 @@ import { CacheModule } from '@nestjs/cache-manager';
         database: process.env.DB_DATABASE,
         autoLoadEntities: true,
         synchronize: true,
-        dropSchema: false,
+        dropSchema: false, // Waspada jangan asal ubah jadi true, data bisa hilang
       }),
     }),
     AdminsModule,

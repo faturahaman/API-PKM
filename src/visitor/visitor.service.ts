@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, BadRequestException, Logger } from '@nestjs/common';
 import { Repository, Between } from 'typeorm';
 import { Visitor } from './entity/visitor.entity';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -10,15 +10,19 @@ import type { Cache } from 'cache-manager';
 
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+import { Puskesmas } from '../puskesmas/entity/puskesmas.entity';
 
 @Injectable()
 export class VisitorService {
+    private readonly logger = new Logger(VisitorService.name);
     private visitorRepository: BaseTenantRepository<Visitor>;
 
     constructor(
         // [UPGRADE 1]: Tambahin `private readonly` biar native repo bisa dipakai buat Raw Query Builder
         @InjectRepository(Visitor)
         private readonly visitorRepositoryNative: Repository<Visitor>,
+        @InjectRepository(Puskesmas)
+        private readonly puskesmasRepository: Repository<Puskesmas>,
         private readonly tenantContextService: TenantContextService,
         // [UPGRADE 2]: Inject Cache Manager ke dalam Service
         @Inject(CACHE_MANAGER) private cacheManager: Cache
@@ -48,6 +52,18 @@ export class VisitorService {
 
         // Ambil puskesmas_id dari konteks
         const puskesmasId = this.tenantContextService.getTenantId();
+
+        // Validasi: Jika puskesmasId diisi, pastikan puskesmas tersebut ada di database
+        if (puskesmasId) {
+            const puskesmas = await this.puskesmasRepository.findOne({
+                where: { id: puskesmasId },
+                select: ['id']
+            });
+            if (!puskesmas) {
+                this.logger.warn(`Invalid puskesmas_id: ${puskesmasId} - visitor not tracked`);
+                return { message: 'Invalid puskesmas_id - visitor not tracked' };
+            }
+        }
 
         try {
             // Gunakan repository biasa untuk insert (bypass tenant filtering untuk tracking)
@@ -85,7 +101,9 @@ export class VisitorService {
         const cached = await this.cacheManager.get<number>(cacheKey);
         if (cached !== undefined && cached !== null) return cached;
 
-        const result = await this.visitorRepository.count();
+        // Filter by tenant if tenantId is available
+        const where = tenantId !== 'global' ? { puskesmas_id: tenantId } : {};
+        const result = await this.visitorRepository.count({ where });
         await this.cacheManager.set(cacheKey, result, 3600000); // Cache 1 Jam
         return result;
     }
@@ -100,11 +118,14 @@ export class VisitorService {
         const cached = await this.cacheManager.get<number>(cacheKey);
         if (cached !== undefined && cached !== null) return cached;
 
-        const result = await this.visitorRepository.count({
-            where: {
-                visit_date: today,
-            },
-        });
+        // Filter by tenant if tenantId is available
+        const where: Record<string, unknown> = {
+            visit_date: today,
+        };
+        if (tenantId !== 'global') {
+            where.puskesmas_id = tenantId;
+        }
+        const result = await this.visitorRepository.count({ where });
 
         await this.cacheManager.set(cacheKey, result, 300000); // Khusus harian, cache 5 menit aja biar admin liat update
         return result;
@@ -121,11 +142,14 @@ export class VisitorService {
         const cached = await this.cacheManager.get<number>(cacheKey);
         if (cached !== undefined && cached !== null) return cached;
 
-        const result = await this.visitorRepository.count({
-            where: {
-                visit_date: Between(start, end),
-            },
-        });
+        // Filter by tenant if tenantId is available
+        const where: Record<string, unknown> = {
+            visit_date: Between(start, end),
+        };
+        if (tenantId !== 'global') {
+            where.puskesmas_id = tenantId;
+        }
+        const result = await this.visitorRepository.count({ where });
 
         await this.cacheManager.set(cacheKey, result, 3600000); // Cache 1 Jam
         return result;
@@ -142,11 +166,14 @@ export class VisitorService {
         const cached = await this.cacheManager.get<number>(cacheKey);
         if (cached !== undefined && cached !== null) return cached;
 
-        const result = await this.visitorRepository.count({
-            where: {
-                visit_date: Between(start, end),
-            },
-        });
+        // Filter by tenant if tenantId is available
+        const where: Record<string, unknown> = {
+            visit_date: Between(start, end),
+        };
+        if (tenantId !== 'global') {
+            where.puskesmas_id = tenantId;
+        }
+        const result = await this.visitorRepository.count({ where });
 
         await this.cacheManager.set(cacheKey, result, 3600000); // Cache 1 Jam
         return result;

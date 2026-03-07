@@ -2,7 +2,11 @@ import { Injectable } from '@nestjs/common';
 
 @Injectable()
 export class AppService {
-  getHello(): string {
-    return 'Hi mate, what are you doing here?';
+  healthCheck() {
+    return {
+      status: 'ok',
+      message: 'Server running',
+      timestamp: new Date(),
+    };
   }
 }

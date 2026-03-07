@@ -35,12 +35,17 @@ export class BaseTenantRepository<T extends ObjectLiteral> {
         // If Super Admin has switched to a specific tenant (active_tenant), filter by that tenant
         // If Super Admin has no active_tenant (null), they can access all data
         // For Operators, they can only access their own puskesmas
-        if (isSuperAdmin && !tenantId) {
-            // Super Admin without active_tenant can access all data
-            return null;
+        if (isSuperAdmin) {
+            // Super Admin can access all data (even without active_tenant)
+            // They can also filter by specific tenant if active_tenant is set
+            return tenantId; // Returns tenantId if set, null if not (both OK for Super Admin)
         }
 
         if (!tenantId) {
+            // Non-Super Admin users MUST have a tenantId
+            if (allowNullForPublic) {
+                return null; // Allow null for public routes
+            }
             throw new ForbiddenException('Tenant context is required for this operation. Missing puskesmas_id.');
         }
 
