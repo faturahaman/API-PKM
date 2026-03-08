@@ -1,5 +1,5 @@
 import {
-  Controller, Post, Body, Get, Param, Delete, UseGuards, NotFoundException, Query, Put
+  Controller, Post, Body, Get, Param, Delete, UseGuards, NotFoundException, Query, Patch
 } from '@nestjs/common';
 import { AlbumService } from './album.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
@@ -10,7 +10,7 @@ import { AuthGuard } from '@nestjs/passport';
 export class AlbumAdminController {
   constructor(private readonly albumService: AlbumService) { }
 
-  @Post() 
+  @Post()
   create(@Body() createAlbumDto: CreateAlbumDto) {
     return this.albumService.create(createAlbumDto);
   }
@@ -18,11 +18,14 @@ export class AlbumAdminController {
   @Get()
   findAll(
     @Query('page') page: string,
-    @Query('limit') limit: string
+    @Query('limit') limit: string,
+    @Query('search') search: string,
+    @Query('status') status: string,
   ) {
     const p = parseInt(page) || 1;
     const l = parseInt(limit) || 10;
-    return this.albumService.findAll(p, l);
+    // forward search and status (status is currently unused) to service
+    return this.albumService.findAll(p, l, search || '', status || 'all');
   }
 
   @Get(':id')
@@ -32,7 +35,7 @@ export class AlbumAdminController {
     return album;
   }
 
-  @Put(':id')
+  @Patch(':id')
   update(@Param('id') id: string, @Body() updateData: any) {
     // Idealnya ganti 'any' dengan UpdateAlbumDto
     return this.albumService.update(id, updateData);

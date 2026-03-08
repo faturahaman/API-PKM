@@ -1,5 +1,5 @@
 import {
-  Controller, Get, Post, Body, Param, Delete, Put, UseGuards,
+  Controller, Get, Post, Body, Param, Delete, Patch, UseGuards,
   UseInterceptors, UploadedFile, BadRequestException, Query
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -39,7 +39,7 @@ export class BannerAdminController {
     return this.bannerService.findOne(id);
   }
 
-  @Put(':id')
+  @Patch(':id')
   @UseInterceptors(FileInterceptor('image', createMulterOptions('banner')))
   update(
     @Param('id') id: string,

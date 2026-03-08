@@ -252,7 +252,6 @@ export class PagesService {
     }
 
     async findOneByData(data: string) {
-        console.log(data);
         const page = await this.pageRepository.findOne({ where: { title: data } });
         if (!page) throw new NotFoundException('Halaman tidak ditemukan');
         return page;

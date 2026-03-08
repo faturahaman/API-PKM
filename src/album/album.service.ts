@@ -53,13 +53,33 @@ export class AlbumService {
     return savedAlbum;
   }
 
-  async findAll(page: number = 1, limit: number = 10) {
+  async findAll(
+    page: number = 1,
+    limit: number = 10,
+    search: string = '',
+    status: string = 'all',
+  ) {
     const skip = (page - 1) * limit;
-    const [data, total] = await this.albumRepository.findAndCount({
-      skip,
-      take: limit,
-      order: { created_at: 'DESC' },
-    });
+
+    // build query builder to allow conditional where clauses
+    const qb = this.albumRepository.createQueryBuilder('album');
+
+    if (search) {
+      // case-insensitive title search
+      qb.where('LOWER(album.album_title) LIKE :search', { search: `%${search.toLowerCase()}%` });
+    }
+
+    // placeholder: status filtering if ever needed; album entity has no status column
+    if (status && status !== 'all') {
+      // qb.andWhere('album.status = :status', { status });
+      // leave as comment to indicate intent
+    }
+
+    qb.orderBy('album.created_at', 'DESC')
+      .skip(skip)
+      .take(limit);
+
+    const [data, total] = await qb.getManyAndCount();
 
     return {
       docs: data,

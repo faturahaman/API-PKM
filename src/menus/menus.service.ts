@@ -114,16 +114,50 @@ export class MenusService {
     return rootMenus;
   }
 
-  async findAllAdmin() {
-    const menus = await this.menuRepository.find({
-      relations: ['parent'],
-      order: { order: 'ASC' },
-    });
+  async findAllAdmin(search?: string, page: number = 1, limit: number = 10, type?: string) {
+    const query = this.menuRepository.createQueryBuilder('menu');
+    query.leftJoinAndSelect('menu.parent', 'parent');
+    query.leftJoinAndSelect('menu.children', 'children');
 
-    return menus.map((menu) => ({
-      ...menu,
-      parent: menu.parent ? { id: menu.parent.id, title: menu.parent.title } : null,
-    }));
+    // Only get root menus (menus without parent)
+    query.where('menu.parent_id IS NULL');
+
+    if (search) {
+      query.andWhere('menu.title LIKE :search', { search: `%${search}%` });
+    }
+
+    if (type) {
+      query.andWhere('menu.type = :type', { type });
+    }
+
+    query.orderBy('menu.order', 'ASC');
+    query.skip((page - 1) * limit).take(limit);
+
+    const [data, total] = await query.getManyAndCount();
+
+    return {
+      data: data.map((menu) => ({
+        ...menu,
+        parent: menu.parent ? { id: menu.parent.id, title: menu.parent.title } : null,
+        parent_id: menu.parent ? menu.parent.id : null,
+        children: menu.children ? menu.children.map(child => ({
+          id: child.id,
+          title: child.title,
+          slug: child.slug,
+          type: child.type,
+          order: child.order,
+          status: child.status,
+          parent_id: child.parent ? child.parent.id : null,
+          parent: child.parent ? { id: child.parent.id, title: child.parent.title } : null,
+          children: [],
+          createdAt: child.createdAt,
+          updatedAt: child.updatedAt,
+        })) : [],
+      })),
+      total,
+      page,
+      totalPages: Math.ceil(total / limit),
+    };
   }
 
   async findOne(id: string) {

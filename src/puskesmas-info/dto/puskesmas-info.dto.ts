@@ -46,6 +46,18 @@ export class CreatePuskesmasInfoDto {
     @IsString()
     @IsOptional()
     contact?: string;
+
+    @IsString()
+    @IsOptional()
+    kepala_puskesmas?: string;
+
+    @IsString()
+    @IsOptional()
+    kepala_foto?: string;
+
+    @IsString()
+    @IsOptional()
+    Sambutan_konten?: string;
 }
 
 export class UpdatePuskesmasInfoDto extends CreatePuskesmasInfoDto { }

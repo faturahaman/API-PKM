@@ -40,6 +40,15 @@ export class PuskesmasInfo {
     @Column({ nullable: true })
     contact: string;
 
+    @Column({ nullable: true })
+    kepala_puskesmas: string;
+
+    @Column({ nullable: true })
+    kepala_foto: string;
+
+    @Column({ type: 'text', nullable: true })
+    Sambutan_konten: string;
+
     @CreateDateColumn()
     created_at: Date;
 

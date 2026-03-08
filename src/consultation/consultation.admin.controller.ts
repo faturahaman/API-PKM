@@ -1,4 +1,4 @@
-import { Controller, Get, Body, Param, Put, Delete, Query, UseGuards, Post, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Get, Body, Param, Patch, Delete, Query, UseGuards, Post, HttpCode, HttpStatus } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { ConsultationService } from './consultation.service';
 import { UpdateConsultationDto } from './dto/update-consultation.dto';
@@ -37,7 +37,7 @@ export class ConsultationAdminController {
     return this.consultationService.replyConsultation(+id, body.answer);
   }
 
-  @Put(':id')
+  @Patch(':id')
   update(
     @Param('id') id: string,
     @Body() updateDto: UpdateConsultationDto

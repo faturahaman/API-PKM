@@ -21,6 +21,12 @@ export class AuthService {
 
     async signIn(signInDto: CreateUserDto) {
         this.logger.log(`Attempting signIn for: ${signInDto.name}`);
+
+        // Validate recaptcha token exists
+        if (!signInDto.recaptchaToken) {
+            throw new UnauthorizedException('Recaptcha token required');
+        }
+
         try {
             await this.recaptchaService.verify(signInDto.recaptchaToken);
             this.logger.log(`reCAPTCHA verified for: ${signInDto.name}`);
