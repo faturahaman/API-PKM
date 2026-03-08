@@ -1,4 +1,4 @@
-import { IsOptional, IsString, MinLength, IsEnum, Matches } from 'class-validator';
+import { IsOptional, IsString, MinLength, IsEnum, Matches, IsUUID } from 'class-validator';
 import { AdminRole } from '../entity/admin.entity';
 
 export class UpdateAdminDto {
@@ -18,5 +18,9 @@ export class UpdateAdminDto {
 
     @IsOptional()
     @IsEnum(AdminRole)
-    level?: AdminRole;
+    role?: AdminRole;
+
+    @IsOptional()
+    @IsUUID()
+    puskesmas_id?: string;
 }

@@ -8,7 +8,6 @@ export class Menu {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // Tenant isolation
   @Column({ nullable: true })
   puskesmas_id: string;
 

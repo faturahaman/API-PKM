@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Not, Repository } from 'typeorm';
 import { Menu } from './entity/menu.entity';
@@ -11,6 +11,7 @@ import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 
 @Injectable()
 export class MenusService {
+  private readonly logger = new Logger(MenusService.name);
   private menuRepository: BaseTenantRepository<Menu>;
 
   constructor(
@@ -115,12 +116,15 @@ export class MenusService {
   }
 
   async findAllAdmin(search?: string, page: number = 1, limit: number = 10, type?: string) {
+    this.logger.log(`[findAllAdmin] Starting query. Search: ${search}, Page: ${page}, Type: ${type}`);
+    this.logger.log(`[findAllAdmin] Tenant context: ${JSON.stringify(this.tenantContextService.getTenantContext())}`);
+
     const query = this.menuRepository.createQueryBuilder('menu');
     query.leftJoinAndSelect('menu.parent', 'parent');
     query.leftJoinAndSelect('menu.children', 'children');
 
     // Only get root menus (menus without parent)
-    query.where('menu.parent_id IS NULL');
+    query.andWhere('menu.parent_id IS NULL');
 
     if (search) {
       query.andWhere('menu.title LIKE :search', { search: `%${search}%` });
@@ -133,7 +137,11 @@ export class MenusService {
     query.orderBy('menu.order', 'ASC');
     query.skip((page - 1) * limit).take(limit);
 
+    this.logger.log(`[findAllAdmin] Final query: ${query.getSql()}`);
+
     const [data, total] = await query.getManyAndCount();
+
+    this.logger.log(`[findAllAdmin] Found ${total} total menus, returning ${data.length} menus`);
 
     return {
       data: data.map((menu) => ({

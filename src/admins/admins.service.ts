@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Admin } from './entity/admin.entity';
+import { Admin, AdminRole } from './entity/admin.entity';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -22,15 +22,15 @@ export class AdminsService {
     return this.adminRepository.findOne({ where: { id } });
   }
 
-  async findAll(search?: string, level?: string, limit?: number, offset?: number): Promise<{ data: Admin[], total: number }> {
+  async findAll(search?: string, role?: string, limit?: number, offset?: number): Promise<{ data: Admin[], total: number }> {
     const query = this.adminRepository.createQueryBuilder('admin');
 
     if (search) {
       query.where('admin.name LIKE :search', { search: `%${search}%` });
     }
 
-    if (level && level !== 'all') {
-      query.andWhere('admin.level = :level', { level });
+    if (role && role !== 'all') {
+      query.andWhere('admin.role = :role', { role });
     }
 
     const total = await query.getCount();
@@ -39,15 +39,17 @@ export class AdminsService {
     return { data, total };
   }
 
-  async create(name: string, password: string, level?: string): Promise<Omit<Admin, 'password'>> {
+  async create(name: string, password: string, role?: string, puskesmas_id?: string): Promise<Omit<Admin, 'password'>> {
     const hashedPassword = await bcrypt.hash(password, 10);
     const admin = this.adminRepository.create({
       name,
       password: hashedPassword,
-      level: level || 'operator',
+      role: (role as AdminRole) || AdminRole.OPERATOR,
+      puskesmas_id: puskesmas_id || undefined,
     });
     const saved = await this.adminRepository.save(admin);
-    const { password: _, ...result } = saved;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _, ...result } = saved as Admin;
     return result;
   }
 
@@ -63,7 +65,8 @@ export class AdminsService {
 
     Object.assign(admin, dto);
     const saved = await this.adminRepository.save(admin);
-    const { password: _, ...result } = saved;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _, ...result } = saved as Admin;
     return result;
   }
 
@@ -109,7 +112,8 @@ export class AdminsService {
 
     admin.name = name;
     const saved = await this.adminRepository.save(admin);
-    const { password, ...result } = saved;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password: _, ...result } = saved as Admin;
     return result;
   }
 

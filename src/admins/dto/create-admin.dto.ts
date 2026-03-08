@@ -1,4 +1,4 @@
-import { IsString, MinLength, IsOptional, IsEnum, Matches } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsEnum, Matches, IsUUID } from 'class-validator';
 import { SanitizeText } from '../../common/decorators/sanitize.decorator';
 import { AdminRole } from '../entity/admin.entity';
 
@@ -15,5 +15,9 @@ export class CreateAdminDto {
 
     @IsOptional()
     @IsEnum(AdminRole)
-    level?: AdminRole;
+    role?: AdminRole;
+
+    @IsOptional()
+    @IsUUID()
+    puskesmas_id?: string;
 }

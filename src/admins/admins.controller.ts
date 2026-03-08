@@ -41,13 +41,13 @@ export class AdminsController {
   @Get('admins')
   getAllAdmins(
     @Query('search') search?: string,
-    @Query('level') level?: string,
+    @Query('role') role?: string,
     @Query('limit') limit?: string,
     @Query('offset') offset?: string
   ) {
     return this.adminsService.findAll(
       search,
-      level,
+      role,
       limit ? parseInt(limit) : 10,
       offset ? parseInt(offset) : 0
     );
@@ -55,7 +55,7 @@ export class AdminsController {
 
   @Post('admins')
   createAdmin(@Body() dto: CreateAdminDto) {
-    return this.adminsService.create(dto.name, dto.password, dto.level as string);
+    return this.adminsService.create(dto.name, dto.password, dto.role as string, dto.puskesmas_id);
   }
 
   @Get('admins/:id')

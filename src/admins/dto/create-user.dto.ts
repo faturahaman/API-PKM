@@ -1,4 +1,4 @@
-import { IsString, MinLength, IsOptional, IsEnum, Matches, IsNotEmpty } from "class-validator";
+import { IsString, MinLength, IsOptional, IsEnum, Matches, IsNotEmpty, IsUUID } from "class-validator";
 import { SanitizeText } from "../../common/decorators/sanitize.decorator";
 import { AdminRole } from "../entity/admin.entity";
 
@@ -14,7 +14,11 @@ export class CreateUserDto {
 
     @IsOptional()
     @IsEnum(AdminRole)
-    level?: AdminRole;
+    role?: AdminRole;
+
+    @IsOptional()
+    @IsUUID()
+    puskesmas_id?: string;
 
     // Recaptcha token for authentication (used in auth.service.ts)
     @IsOptional()

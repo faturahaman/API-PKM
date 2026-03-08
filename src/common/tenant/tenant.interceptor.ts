@@ -56,7 +56,7 @@ export class TenantInterceptor implements NestInterceptor {
             tenantId, userId, role, isSuperAdmin
         });
 
-        this.logger.debug(`Tenant: ${tenantId} | Role: ${role} | Path: ${path}`);
+        this.logger.log(`[TenantInterceptor] Tenant: ${tenantId} | Role: ${role} | UserId: ${userId} | Path: ${path}`);
 
         return next.handle();
     }

@@ -12,8 +12,11 @@ import {
 } from 'typeorm';
 import { TenantContextService } from './tenant-context.service';
 import { ForbiddenException } from '@nestjs/common';
+import { Logger } from '@nestjs/common';
 
 export class BaseTenantRepository<T extends ObjectLiteral> {
+    private readonly logger = new Logger(BaseTenantRepository.name);
+
     constructor(
         public readonly repository: Repository<T>,
         protected readonly tenantContextService: TenantContextService,
@@ -55,9 +58,14 @@ export class BaseTenantRepository<T extends ObjectLiteral> {
     createQueryBuilder(alias?: string): SelectQueryBuilder<T> {
         const qb = this.repository.createQueryBuilder(alias);
 
+        // Debug logging
+        const context = this.tenantContextService.getTenantContext();
+        this.logger.debug(`[BaseTenantRepo] createQueryBuilder called. Context: ${JSON.stringify(context)}`);
+
         // For public queries, try to get tenant but don't fail
         try {
             const tenantId = this.getTenantIdOrThrow(true); // allowFallback = true
+            this.logger.debug(`[BaseTenantRepo] tenantId from getTenantIdOrThrow: ${tenantId}`);
 
             if (tenantId) {
                 if (alias) {
@@ -65,8 +73,12 @@ export class BaseTenantRepository<T extends ObjectLiteral> {
                 } else {
                     qb.andWhere(`puskesmas_id = :tenantId`, { tenantId });
                 }
+                this.logger.debug(`[BaseTenantRepo] Applied tenant filter: puskesmas_id = ${tenantId}`);
+            } else {
+                this.logger.warn(`[BaseTenantRepo] No tenantId - query will NOT be filtered!`);
             }
         } catch (e) {
+            this.logger.warn(`[BaseTenantRepo] Exception in createQueryBuilder: ${e.message} - allowing public access (no filter)`);
             // No tenant context - allow public access (no filter)
             // This is expected for localhost without subdomain
         }
