@@ -40,15 +40,13 @@ export class TenantInterceptor implements NestInterceptor {
         } else if (!tenantId && path.includes('/api')) {
             // For public routes without auth, try x-tenant-slug header first
             const headerTenantSlug = req.headers['x-tenant-slug'] as string;
+            const headerTenantId = req.headers['x-tenant-id'] as string;
+
             if (headerTenantSlug && headerTenantSlug !== 'default') {
-                // The slug will be converted to UUID by the middleware
-                // But if we received it directly, we need to look it up
-                // For now, pass the slug to the service layer
                 tenantId = headerTenantSlug;
             }
-            // Also try x-tenant-id header (UUID format)
-            const headerTenantId = req.headers['x-tenant-id'];
-            if (headerTenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(headerTenantId as string)) {
+            // Also try x-tenant-id header (UUID format) - accept any valid UUID
+            if (headerTenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(headerTenantId as string)) {
                 tenantId = headerTenantId as string;
             }
         }

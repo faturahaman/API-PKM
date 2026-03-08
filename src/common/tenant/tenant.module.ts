@@ -10,14 +10,13 @@ import { Puskesmas } from '../../puskesmas/entity/puskesmas.entity'; // Pastiin 
 @Global()
 @Module({
     imports: [
-        // [FIX 1] Daftarin entity Puskesmas biar Repository-nya bisa di-inject ke Middleware
         TypeOrmModule.forFeature([Puskesmas]),
     ],
     providers: [
         TenantContextService,
         TenantInterceptor,
         TenantGuard,
-        TenantMiddleware, // [FIX 2] Middleware harus masuk providers kalo dia punya dependency inject
+        TenantMiddleware,
         {
             provide: APP_INTERCEPTOR,
             useExisting: TenantInterceptor,
@@ -27,7 +26,7 @@ import { Puskesmas } from '../../puskesmas/entity/puskesmas.entity'; // Pastiin 
         TenantContextService,
         TenantInterceptor,
         TenantGuard,
-        TypeOrmModule, // Export sekalian biar module lain gak perlu forFeature lagi kalo butuh Puskesmas
+        TypeOrmModule,
     ],
 })
 export class TenantModule implements NestModule {
