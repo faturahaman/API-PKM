@@ -15,6 +15,9 @@ export class AuthService {
     ) { }
 
     async signIn(signInDto: CreateUserDto) {
+        if (!signInDto.recaptchaToken) {
+            throw new UnauthorizedException('Recaptcha token required');
+        }
         await this.recaptchaService.verify(signInDto.recaptchaToken);
 
         // Cek admin

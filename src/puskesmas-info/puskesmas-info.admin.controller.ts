@@ -1,8 +1,8 @@
 import {
     Controller, Get, Body, Patch, UseGuards,
-    UseInterceptors, UploadedFile
+    UseInterceptors, UploadedFile, UploadedFiles
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
+import { FileInterceptor, AnyFilesInterceptor } from '@nestjs/platform-express';
 import { PuskesmasInfoService } from './puskesmas-info.service';
 import { UpdatePuskesmasInfoDto } from './dto/puskesmas-info.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -19,13 +19,21 @@ export class PuskesmasInfoAdminController {
     }
 
     @Patch()
-    @UseInterceptors(FileInterceptor('logo', createMulterOptions('web-info')))
+    @UseInterceptors(AnyFilesInterceptor(createMulterOptions('web-info')))
     update(
         @Body() dto: UpdatePuskesmasInfoDto,
-        @UploadedFile() file?: Express.Multer.File
+        @UploadedFiles() files?: Express.Multer.File[]
     ) {
-        if (file) {
-            dto.logo = getPublicPath('web-info', file.filename);
+        // Handle logo file
+        const logoFile = files?.find(f => f.fieldname === 'logo');
+        if (logoFile) {
+            dto.logo = getPublicPath('web-info', logoFile.filename);
+        }
+
+        // Handle kepala_foto file
+        const kepalaFile = files?.find(f => f.fieldname === 'kepala_foto');
+        if (kepalaFile) {
+            dto.kepala_foto = getPublicPath('web-info', kepalaFile.filename);
         }
 
         return this.service.updateInfo(dto);

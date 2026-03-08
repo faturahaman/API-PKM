@@ -6,9 +6,6 @@ export class EmailService {
   constructor(private readonly mailerService: MailerService) {}
 
 async sendMail(to: string, subject: string, message: string) {
-  // Tambahin ini buat ngecek apakah service nerima alamat emailnya:
-  console.log('Alamat tujuan:', to); 
-  
   try {
     await this.mailerService.sendMail({
       to: to,
@@ -17,7 +14,7 @@ async sendMail(to: string, subject: string, message: string) {
     });
     return { message: 'Email sukses dikirim!' };
   } catch (error) {
-    console.log(error);
+    // Re-throw error for caller to handle
     throw error;
   }
 }
