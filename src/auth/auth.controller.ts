@@ -5,6 +5,7 @@ import { AuthGuard } from '@nestjs/passport';
 import { CreateUserDto } from 'src/admins/dto/create-user.dto';
 import { SwitchTenantDto } from './dto/switch-tenant.dto';
 import { JwtPayload } from 'src/types/jwt.interface';
+import { AdminsService } from 'src/admins/admins.service';
 
 interface AuthenticatedRequest extends Request {
   user?: JwtPayload;
@@ -12,7 +13,10 @@ interface AuthenticatedRequest extends Request {
 
 @Controller('auth')
 export class AuthController {
-  constructor(private authService: AuthService) { }
+  constructor(
+    private authService: AuthService,
+    private adminsService: AdminsService,
+  ) { }
 
   @HttpCode(HttpStatus.OK)
   @Post('login')
@@ -24,6 +28,13 @@ export class AuthController {
   @Post('logout')
   @HttpCode(HttpStatus.OK)
   async logout(@Request() req, @Res({ passthrough: true }) response: Response) {
+    const user = req.user as JwtPayload;
+
+    // Clear current_token from database to invalidate all sessions
+    if (user?.sub) {
+      await this.adminsService.updateCurrentToken(user.sub, '');
+    }
+
     response.clearCookie('access_token', {
       httpOnly: true,
       path: '/',

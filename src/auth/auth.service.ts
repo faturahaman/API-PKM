@@ -8,6 +8,7 @@ import { RecaptchaService } from 'src/common/recaptcha/recaptcha.service';
 import { AdminRole } from 'src/admins/entity/admin.entity';
 import { SwitchTenantDto } from './dto/switch-tenant.dto';
 import { PuskesmasService } from 'src/puskesmas/puskesmas.service';
+import { PuskesmasStatus } from 'src/puskesmas/entity/puskesmas.entity';
 
 @Injectable()
 export class AuthService {
@@ -64,6 +65,20 @@ export class AuthService {
                 this.logger.error(`ERROR: Operator ${admin.name} has NO puskesmas_id`);
                 throw new UnauthorizedException('Operator belum memiliki puskesmas yang ditugaskan.');
             }
+
+            // Validate that the operator's puskesmas is ACTIVE
+            const puskesmas = await this.puskesmasService.findOne(admin.puskesmas_id);
+            if (!puskesmas) {
+                this.logger.error(`ERROR: Puskesmas not found for operator ${admin.name}`);
+                throw new UnauthorizedException('Puskesmas tidak ditemukan.');
+            }
+
+            if (puskesmas.status !== PuskesmasStatus.ACTIVE) {
+                this.logger.warn(`Operator ${admin.name} trying to login to SUSPENDED/Inactive puskesmas: ${puskesmas.name}`);
+                throw new ForbiddenException(
+                    `Puskesmas "${puskesmas.name}" sedang tidak aktif. Silakan hubungi administrator.`
+                );
+            }
         }
 
         const token = await this.jwtService.signAsync(payload);
@@ -114,10 +129,17 @@ export class AuthService {
             };
         }
 
-        // Validate the target tenant exists
+        // Validate the target tenant exists and is ACTIVE
         const targetPuskesmas = await this.puskesmasService.findOne(switchTenantDto.tenant_id);
         if (!targetPuskesmas) {
             throw new NotFoundException('Puskesmas tidak ditemukan.');
+        }
+
+        // Check if target puskesmas is ACTIVE
+        if (targetPuskesmas.status !== PuskesmasStatus.ACTIVE) {
+            throw new ForbiddenException(
+                `Puskesmas "${targetPuskesmas.name}" sedang tidak aktif. Tidak dapat switch ke tenant ini.`
+            );
         }
 
         // Create new JWT with active_tenant
