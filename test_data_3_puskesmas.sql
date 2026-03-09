@@ -38,17 +38,17 @@ ON DUPLICATE KEY UPDATE name=name;
 
 -- Operator Bogor Tengah
 INSERT INTO admins (id, name, role, password, puskesmas_id, created_at, updated_at)
-VALUES ('a0000000-0000-0000-0000-000000000002', 'operator_tengah', 'OPERATOR', '$2b$10$9od9vp5hqKV9xg8AUZJGnetSIphpsdMq9E1UpztiTCPgMAR9EPd/K', '11111111-1111-1111-1111-111111111111', NOW(), NOW())
+VALUES ('a0000000-0000-0000-0000-000000000002', 'operatortengah', 'OPERATOR', '$2b$10$9od9vp5hqKV9xg8AUZJGnetSIphpsdMq9E1UpztiTCPgMAR9EPd/K', '11111111-1111-1111-1111-111111111111', NOW(), NOW())
 ON DUPLICATE KEY UPDATE name=name;
 
 -- Operator Bogor Utara
 INSERT INTO admins (id, name, role, password, puskesmas_id, created_at, updated_at)
-VALUES ('a0000000-0000-0000-0000-000000000003', 'operator_utara', 'OPERATOR', '$2b$10$9od9vp5hqKV9xg8AUZJGnetSIphpsdMq9E1UpztiTCPgMAR9EPd/K', '22222222-2222-2222-2222-222222222222', NOW(), NOW())
+VALUES ('a0000000-0000-0000-0000-000000000003', 'operatorutara', 'OPERATOR', '$2b$10$9od9vp5hqKV9xg8AUZJGnetSIphpsdMq9E1UpztiTCPgMAR9EPd/K', '22222222-2222-2222-2222-222222222222', NOW(), NOW())
 ON DUPLICATE KEY UPDATE name=name;
 
 -- Operator Bogor Selatan
 INSERT INTO admins (id, name, role, password, puskesmas_id, created_at, updated_at)
-VALUES ('a0000000-0000-0000-0000-000000000004', 'operator_selatan', 'OPERATOR', '$2b$10$9od9vp5hqKV9xg8AUZJGnetSIphpsdMq9E1UpztiTCPgMAR9EPd/K', '33333333-3333-3333-3333-333333333333', NOW(), NOW())
+VALUES ('a0000000-0000-0000-0000-000000000004', 'operatorselatan', 'OPERATOR', '$2b$10$9od9vp5hqKV9xg8AUZJGnetSIphpsdMq9E1UpztiTCPgMAR9EPd/K', '33333333-3333-3333-3333-333333333333', NOW(), NOW())
 ON DUPLICATE KEY UPDATE name=name;
 
 -- ============================================================
