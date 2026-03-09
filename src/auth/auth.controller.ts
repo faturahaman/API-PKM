@@ -6,6 +6,7 @@ import { CreateUserDto } from 'src/admins/dto/create-user.dto';
 import { SwitchTenantDto } from './dto/switch-tenant.dto';
 import { JwtPayload } from 'src/types/jwt.interface';
 import { AdminsService } from 'src/admins/admins.service';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 
 interface AuthenticatedRequest extends Request {
   user?: JwtPayload;
@@ -19,6 +20,8 @@ export class AuthController {
   ) { }
 
   @HttpCode(HttpStatus.OK)
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ short: { ttl: 60000, limit: 5 }, medium: { ttl: 3600000, limit: 10 } })
   @Post('login')
   signIn(@Body() signInDto: CreateUserDto) {
     return this.authService.signIn(signInDto);

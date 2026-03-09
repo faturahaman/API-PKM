@@ -7,6 +7,7 @@ import { AuthController } from './auth.controller';
 import { AdminsModule } from '../admins/admins.module';
 import { JwtStrategy } from './jwt.strategy';
 import { PuskesmasModule } from '../puskesmas/puskesmas.module';
+import { LogactivityModule } from '../logactivity/logactivity.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { PuskesmasModule } from '../puskesmas/puskesmas.module';
       }),
     }),
     PuskesmasModule,
+    LogactivityModule,
   ],
   controllers: [AuthController],
   providers: [AuthService, JwtStrategy],

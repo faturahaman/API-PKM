@@ -176,19 +176,84 @@ export class BaseTenantRepository<T extends ObjectLiteral> {
             throw new ForbiddenException('Tenant context is required for UPDATE operations. Missing puskesmas_id.');
         }
 
-        // Must update using query builder to ensure tenant restriction applies safely
-        const qb = this.createQueryBuilder('entity');
-
+        // Handle different types of criteria
         if (typeof criteria === 'object' && !Array.isArray(criteria) && !(criteria instanceof Date)) {
-            qb.andWhere(criteria as any);
+            // It's a FindOptionsWhere object - need to extract keys properly
+            const qb = this.repository.createQueryBuilder();
+
+            // Build WHERE clause from criteria keys
+            const whereClauses: string[] = [];
+            const params: any = {};
+
+            for (const [key, value] of Object.entries(criteria)) {
+                if (value && typeof value === 'object' && !Array.isArray(value)) {
+                    // Handle special operators like In, MoreThan, LessThan, etc.
+                    if ('in' in value && Array.isArray(value.in)) {
+                        // Handle In operator
+                        const paramName = `${key}In`;
+                        whereClauses.push(`${key} IN (:...${paramName})`);
+                        params[paramName] = value.in;
+                    } else if ('eq' in value) {
+                        whereClauses.push(`${key} = :${key}Eq`);
+                        params[`${key}Eq`] = value.eq;
+                    } else if ('ne' in value) {
+                        whereClauses.push(`${key} != :${key}Ne`);
+                        params[`${key}Ne`] = value.ne;
+                    } else if ('lt' in value) {
+                        whereClauses.push(`${key} < :${key}Lt`);
+                        params[`${key}Lt`] = value.lt;
+                    } else if ('lte' in value) {
+                        whereClauses.push(`${key} <= :${key}Lte`);
+                        params[`${key}Lte`] = value.lte;
+                    } else if ('gt' in value) {
+                        whereClauses.push(`${key} > :${key}Gt`);
+                        params[`${key}Gt`] = value.gt;
+                    } else if ('gte' in value) {
+                        whereClauses.push(`${key} >= :${key}Gte`);
+                        params[`${key}Gte`] = value.gte;
+                    } else if ('like' in value) {
+                        whereClauses.push(`${key} LIKE :${key}Like`);
+                        params[`${key}Like`] = value.like;
+                    } else if ('isNull' in value) {
+                        whereClauses.push(value.isNull ? `${key} IS NULL` : `${key} IS NOT NULL`);
+                    }
+                } else {
+                    // Direct value
+                    whereClauses.push(`${key} = :${key}Value`);
+                    params[`${key}Value`] = value;
+                }
+            }
+
+            // Add tenant filter
+            whereClauses.push('puskesmas_id = :tenantId');
+            params['tenantId'] = tenantId;
+
+            if (whereClauses.length > 0) {
+                qb.where(whereClauses.join(' AND '), params);
+            }
+
+            // Add tenantId to update payload
+            partialEntity.puskesmas_id = tenantId;
+
+            return qb.update(partialEntity).execute();
         } else {
-            qb.andWhereInIds(criteria);
+            // Simple criteria (id or ids)
+            const qb = this.repository.createQueryBuilder();
+
+            // Add tenant filter
+            qb.where('puskesmas_id = :tenantId', { tenantId });
+
+            if (Array.isArray(criteria)) {
+                qb.andWhere('id IN (:...ids)', { ids: criteria });
+            } else {
+                qb.andWhere('id = :id', { id: criteria });
+            }
+
+            // Add tenantId to update payload
+            partialEntity.puskesmas_id = tenantId;
+
+            return qb.update(partialEntity).execute();
         }
-
-        // Add tenantId to update payload just in case
-        partialEntity.puskesmas_id = tenantId;
-
-        return qb.update(partialEntity).execute();
     }
 
     async delete(criteria: string | string[] | number | number[] | Date | Date[] | FindOptionsWhere<T>): Promise<DeleteResult> {
@@ -199,15 +264,78 @@ export class BaseTenantRepository<T extends ObjectLiteral> {
             throw new ForbiddenException('Tenant context is required for DELETE operations. Missing puskesmas_id.');
         }
 
-        const qb = this.createQueryBuilder('entity');
-
+        // Handle different types of criteria
         if (typeof criteria === 'object' && !Array.isArray(criteria) && !(criteria instanceof Date)) {
-            qb.andWhere(criteria as any);
-        } else {
-            qb.andWhereInIds(criteria);
-        }
+            // It's a FindOptionsWhere object - need to extract keys properly
+            const qb = this.repository.createQueryBuilder();
 
-        return qb.delete().execute();
+            // Build WHERE clause from criteria keys
+            const whereClauses: string[] = [];
+            const params: any = {};
+
+            for (const [key, value] of Object.entries(criteria)) {
+                if (value && typeof value === 'object' && !Array.isArray(value)) {
+                    // Handle special operators like In, MoreThan, LessThan, etc.
+                    if ('in' in value && Array.isArray(value.in)) {
+                        // Handle In operator
+                        const paramName = `${key}In`;
+                        whereClauses.push(`${key} IN (:...${paramName})`);
+                        params[paramName] = value.in;
+                    } else if ('eq' in value) {
+                        whereClauses.push(`${key} = :${key}Eq`);
+                        params[`${key}Eq`] = value.eq;
+                    } else if ('ne' in value) {
+                        whereClauses.push(`${key} != :${key}Ne`);
+                        params[`${key}Ne`] = value.ne;
+                    } else if ('lt' in value) {
+                        whereClauses.push(`${key} < :${key}Lt`);
+                        params[`${key}Lt`] = value.lt;
+                    } else if ('lte' in value) {
+                        whereClauses.push(`${key} <= :${key}Lte`);
+                        params[`${key}Lte`] = value.lte;
+                    } else if ('gt' in value) {
+                        whereClauses.push(`${key} > :${key}Gt`);
+                        params[`${key}Gt`] = value.gt;
+                    } else if ('gte' in value) {
+                        whereClauses.push(`${key} >= :${key}Gte`);
+                        params[`${key}Gte`] = value.gte;
+                    } else if ('like' in value) {
+                        whereClauses.push(`${key} LIKE :${key}Like`);
+                        params[`${key}Like`] = value.like;
+                    } else if ('isNull' in value) {
+                        whereClauses.push(value.isNull ? `${key} IS NULL` : `${key} IS NOT NULL`);
+                    }
+                } else {
+                    // Direct value
+                    whereClauses.push(`${key} = :${key}Value`);
+                    params[`${key}Value`] = value;
+                }
+            }
+
+            // Add tenant filter
+            whereClauses.push('puskesmas_id = :tenantId');
+            params['tenantId'] = tenantId;
+
+            if (whereClauses.length > 0) {
+                qb.where(whereClauses.join(' AND '), params);
+            }
+
+            return qb.delete().execute();
+        } else {
+            // Simple criteria (id or ids)
+            const qb = this.repository.createQueryBuilder();
+
+            // Add tenant filter
+            qb.where('puskesmas_id = :tenantId', { tenantId });
+
+            if (Array.isArray(criteria)) {
+                qb.andWhere('id IN (:...ids)', { ids: criteria });
+            } else {
+                qb.andWhere('id = :id', { id: criteria });
+            }
+
+            return qb.delete().execute();
+        }
     }
 
     async remove(entityOrEntities: any, options?: SaveOptions): Promise<any> {

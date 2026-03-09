@@ -8,6 +8,8 @@ import slugify from 'slugify';
 
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+import { LogactivityService } from '../logactivity/logactivity.service';
+import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
 
 @Injectable()
 export class MenusService {
@@ -18,6 +20,7 @@ export class MenusService {
     @InjectRepository(Menu)
     menuRepositoryNative: Repository<Menu>,
     private readonly tenantContextService: TenantContextService,
+    private readonly logactivityService: LogactivityService,
   ) {
     this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
   }
@@ -42,7 +45,25 @@ export class MenusService {
       menu.parent = parent;
     }
 
-    return this.menuRepository.save(menu);
+    const savedMenu = await this.menuRepository.save(menu);
+
+    // Log activity - CREATE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.CREATE,
+        module: 'MENU',
+        entity_id: savedMenu.id,
+        payload_after: {
+          title: savedMenu.title,
+          slug: savedMenu.slug,
+          type: savedMenu.type,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
+    }
+
+    return savedMenu;
   }
 
   async findBySlug(slug: string) {
@@ -204,7 +225,25 @@ export class MenusService {
     }
 
     this.menuRepository.merge(menu, updateData);
-    return this.menuRepository.save(menu);
+    const savedMenu = await this.menuRepository.save(menu);
+
+    // Log activity - UPDATE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.UPDATE,
+        module: 'MENU',
+        entity_id: savedMenu.id,
+        payload_after: {
+          title: savedMenu.title,
+          slug: savedMenu.slug,
+          type: savedMenu.type,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
+    }
+
+    return savedMenu;
   }
 
   async remove(id: string) {
@@ -218,6 +257,26 @@ export class MenusService {
       throw new BadRequestException('Menu memiliki submenu. Hapus submenu terlebih dahulu.');
     }
 
-    return this.menuRepository.remove(menu);
+    const deletedData = {
+      title: menu.title,
+      slug: menu.slug,
+      type: menu.type,
+    };
+
+    const result = await this.menuRepository.remove(menu);
+
+    // Log activity - DELETE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.DELETE,
+        module: 'MENU',
+        entity_id: id,
+        payload_before: deletedData,
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
+    }
+
+    return result;
   }
 }

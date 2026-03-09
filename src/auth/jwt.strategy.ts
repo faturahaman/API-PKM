@@ -26,16 +26,16 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
     const admin = await this.adminService.findOne(payload.sub);
     if (!admin) {
-      console.warn(`[JwtStrategy] Admin not found for ID: ${payload.sub}`);
+      console.warn(`[JwtStrategy] Admin not found for ID`);
       throw new UnauthorizedException('Admin tidak ditemukan.');
     }
 
     if (admin.current_token !== token) {
-      console.warn(`[JwtStrategy] Token mismatch for ${admin.name}. Incoming: ${token?.substring(0, 20)}..., DB: ${admin.current_token?.substring(0, 20)}...`);
+      console.warn(`[JwtStrategy] Token mismatch - session invalidation`);
       throw new UnauthorizedException('Sesi berakhir karena akun ini telah login di perangkat lain.');
     }
 
-    console.log(`[JwtStrategy] Token validated for: ${admin.name}`);
+    console.log(`[JwtStrategy] Token validated`);
     // Return the full user object with tenant information
     return {
       sub: admin.id,

@@ -11,7 +11,7 @@ export class AlbumPublicController {
     @Query('limit') limit: string
   ) {
     const p = parseInt(page) || 1;
-    const l = parseInt(limit) || 10;
+    const l = Math.min(parseInt(limit) || 10, 50);
     return this.albumService.findAll(p, l);
   }
 

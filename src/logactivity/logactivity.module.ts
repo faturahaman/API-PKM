@@ -14,4 +14,7 @@ import { TenantModule } from '../common/tenant/tenant.module';
   providers: [LogactivityService],
   exports: [LogactivityService],
 })
-export class LogactivityModule { }
+export class LogactivityModule {
+
+  
+ }

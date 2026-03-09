@@ -1,18 +1,23 @@
-import { Controller, Get, HttpCode, Post, Body, Req, UseInterceptors } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post, Body, Req, UseGuards } from '@nestjs/common';
 import { VisitorService } from './visitor.service';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
 import type { Request } from 'express';
+import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 
 @Controller('visitor')
 export class VisitorController {
   constructor(private readonly visitorService: VisitorService) { }
 
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ short: { ttl: 60000, limit: 30 }, medium: { ttl: 3600000, limit: 500 } })
   @Post()
   @HttpCode(201)
   create(@Body() createVisitorDto: CreateVisitorDto) {
     return this.visitorService.create(createVisitorDto);
   }
 
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ short: { ttl: 60000, limit: 30 }, medium: { ttl: 3600000, limit: 500 } })
   @Post('track')
   @HttpCode(200)
   autoTrack(@Req() req: Request) {

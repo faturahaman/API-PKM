@@ -16,7 +16,8 @@ export class GalleryPublicController {
     @Query('album_id') albumId: string
   ) {
     const p = parseInt(page) || 1;
-    const l = parseInt(limit) || 12;
+    // Batasi maksimal limit untuk mencegah DoS
+    const l = Math.min(parseInt(limit) || 12, 50);
     const isNoAlbum = noAlbum === 'true';
 
     return this.galleryService.findAll(p, l, isNoAlbum, albumId);
