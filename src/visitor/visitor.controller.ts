@@ -13,7 +13,7 @@ export class VisitorController {
     return this.visitorService.create(createVisitorDto);
   }
 
-  @Post('track')
+  @Post('log')
   @HttpCode(200)
   autoTrack(@Req() req: Request) {
     return this.visitorService.trackVisitor(req);
