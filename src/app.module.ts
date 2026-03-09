@@ -28,9 +28,27 @@ import { TenantModule } from './common/tenant/tenant.module';
 import { StorageModule } from './common/storage/storage.module';
 import { KritikSaranModule } from './kritik-saran/kritik-saran.module';
 import { CacheModule } from '@nestjs/cache-manager';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([
+      {
+        name: 'short',
+        ttl: 1000,   // 1 second
+        limit: 10,   // 10 requests per second
+      },
+      {
+        name: 'medium',
+        ttl: 60000,  // 1 minute
+        limit: 100,  // 100 requests per minute (default)
+      },
+      {
+        name: 'long',
+        ttl: 3600000, // 1 hour
+        limit: 1000,  // 1000 requests per hour
+      },
+    ]),
     RecaptchaModule,
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
@@ -42,7 +60,7 @@ import { CacheModule } from '@nestjs/cache-manager';
         password: process.env.DB_PASSWORD,
         database: process.env.DB_DATABASE,
         autoLoadEntities: true,
-        synchronize: true,
+        synchronize: process.env.NODE_ENV !== 'production',
         dropSchema: false, // Waspada jangan asal ubah jadi true, data bisa hilang
       }),
     }),
