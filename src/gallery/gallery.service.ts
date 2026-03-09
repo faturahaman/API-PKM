@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, IsNull } from 'typeorm';
 import { Gallery } from './entity/gallery.entity';
@@ -7,9 +7,12 @@ import { CreateGalleryDto } from './dto/create-gallery.dto';
 
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+import { LogactivityService } from '../logactivity/logactivity.service';
+import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
 
 @Injectable()
 export class GalleryService {
+  private readonly logger = new Logger(GalleryService.name);
   private galleryRepository: BaseTenantRepository<Gallery>;
   private albumRepository: BaseTenantRepository<Album>;
 
@@ -18,7 +21,8 @@ export class GalleryService {
     galleryRepositoryNative: Repository<Gallery>,
     @InjectRepository(Album)
     albumRepositoryNative: Repository<Album>,
-    private readonly tenantContextService: TenantContextService
+    private readonly tenantContextService: TenantContextService,
+    private readonly logactivityService: LogactivityService,
   ) {
     this.galleryRepository = new BaseTenantRepository(galleryRepositoryNative, tenantContextService);
     this.albumRepository = new BaseTenantRepository(albumRepositoryNative, tenantContextService);
@@ -30,7 +34,24 @@ export class GalleryService {
       image: imagePath,
       is_deleted: false,
     });
-    return this.galleryRepository.save(newGallery);
+    const savedGallery = await this.galleryRepository.save(newGallery);
+
+    // Log activity - CREATE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.CREATE,
+        module: 'GALLERY',
+        entity_id: savedGallery.id,
+        payload_after: {
+          title: savedGallery.image_title,
+          image: savedGallery.image,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
+    }
+
+    return savedGallery;
   }
 
   async findAll(page: number = 1, limit: number = 10, isNoAlbum: boolean = false, albumId?: string) {
@@ -71,16 +92,33 @@ export class GalleryService {
       throw new NotFoundException('Data tidak ditemukan');
     }
 
+    const deletedData = {
+      title: galleryToDelete.image_title,
+      image: galleryToDelete.image,
+    };
+
     galleryToDelete.is_deleted = true;
     const oldAlbumId = galleryToDelete.album_id;
 
-    await this.galleryRepository.save(galleryToDelete);
+    const saved = await this.galleryRepository.save(galleryToDelete);
 
     if (oldAlbumId) {
       await this.syncAlbumData(String(oldAlbumId));
     }
 
-    return galleryToDelete;
+    // Log activity - DELETE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.DELETE,
+        module: 'GALLERY',
+        entity_id: id,
+        payload_before: deletedData,
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
+    }
+
+    return saved;
   }
 
   async updateAlbumId(photoIds: string[], albumId: string) {

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Consultation } from './entity/consultation.entity';
@@ -9,9 +9,12 @@ import { RecaptchaService } from '../common/recaptcha/recaptcha.service';
 
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+import { LogactivityService } from '../logactivity/logactivity.service';
+import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
 
 @Injectable()
 export class ConsultationService {
+  private readonly logger = new Logger(ConsultationService.name);
   private consultationRepo: BaseTenantRepository<Consultation>;
 
   constructor(
@@ -19,7 +22,8 @@ export class ConsultationService {
     consultationRepoNative: Repository<Consultation>,
     private readonly emailService: EmailService,
     private readonly recaptchaService: RecaptchaService,
-    private readonly tenantContextService: TenantContextService
+    private readonly tenantContextService: TenantContextService,
+    private readonly logactivityService: LogactivityService,
   ) {
     this.consultationRepo = new BaseTenantRepository(consultationRepoNative, tenantContextService);
   }
@@ -96,10 +100,30 @@ export class ConsultationService {
   }
 
   async remove(id: number) {
+    const consultationToDelete = await this.consultationRepo.findOne({ where: { id } });
+
+    const deletedData = consultationToDelete ? {
+      subject: consultationToDelete.subject,
+      username: consultationToDelete.username,
+    } : {};
+
     const result = await this.consultationRepo.delete(id);
     if (result.affected === 0) {
       throw new NotFoundException(`Consultation #${id} not found`);
     }
+
+    // Log activity - DELETE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.DELETE,
+        module: 'CONSULTATION',
+        entity_id: String(id),
+        payload_before: deletedData,
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
+    }
+
     return { message: 'Deleted successfully' };
   }
 }

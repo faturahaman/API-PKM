@@ -9,14 +9,34 @@ async function bootstrap() {
   const allowedOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
     : process.env.NODE_ENV === 'production'
+<<<<<<< HEAD
       ? []  // Block in production if not configured
       : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://pkm-bogor-tengah.localhost:3000', 'http://pkm-bogor-utara.localhost:3000', 'http://pkm-bogor-selatan.localhost:3000'];
+=======
+      ? ['http://localhost:3000']  // Fallback ke localhost di production (harus di-override)
+      : ['http://localhost:3000', 'http://127.0.0.1:3000'];
+>>>>>>> cafcb402ff2cde802e013ed8809868a228e4af88
 
   app.enableCors({
-    origin: allowedOrigins.length > 0 ? allowedOrigins : true,
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-    credentials: true,
-  });
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true)
+
+    const allowed = [
+      'http://localhost:3000',
+      'http://127.0.0.1:3000'
+    ]
+
+    const isLocalhostSubdomain = origin.endsWith('.localhost:3000')
+
+    if (allowed.includes(origin) || isLocalhostSubdomain) {
+      return callback(null, true)
+    }
+
+    return callback(new Error('Not allowed by CORS'))
+  },
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+  credentials: true,
+})
 
   app.setGlobalPrefix('api');
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StaticPage } from './entity/static-page.entity';
@@ -9,9 +9,12 @@ import { createMulterOptions } from '../common/multer.utils';
 
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+import { LogactivityService } from '../logactivity/logactivity.service';
+import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
 
 @Injectable()
 export class StaticPagesService {
+    private readonly logger = new Logger(StaticPagesService.name);
     private staticPageRepository: BaseTenantRepository<StaticPage>;
     private menuRepository: BaseTenantRepository<Menu>;
 
@@ -20,7 +23,8 @@ export class StaticPagesService {
         staticPageRepositoryNative: Repository<StaticPage>,
         @InjectRepository(Menu)
         menuRepositoryNative: Repository<Menu>,
-        private readonly tenantContextService: TenantContextService
+        private readonly tenantContextService: TenantContextService,
+        private readonly logactivityService: LogactivityService,
     ) {
         this.staticPageRepository = new BaseTenantRepository(staticPageRepositoryNative, tenantContextService);
         this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
@@ -63,7 +67,23 @@ export class StaticPagesService {
             staticPage.menu = null;
         }
 
-        return this.staticPageRepository.save(staticPage);
+        const savedPage = await this.staticPageRepository.save(staticPage);
+
+        // Log activity - CREATE
+        try {
+            await this.logactivityService.log({
+                action: LogActivityAction.CREATE,
+                module: 'STATIC_PAGES',
+                entity_id: savedPage.id,
+                payload_after: {
+                    title: savedPage.title,
+                },
+            });
+        } catch (error) {
+            this.logger.warn(`Failed to log activity: ${error.message}`);
+        }
+
+        return savedPage;
     }
 
     async findAllAdmin(search?: string, page: number = 1, limit: number = 10) {
@@ -164,12 +184,47 @@ export class StaticPagesService {
         }
 
         this.staticPageRepository.merge(staticPage, updateData);
-        return this.staticPageRepository.save(staticPage);
+        const savedPage = await this.staticPageRepository.save(staticPage);
+
+        // Log activity - UPDATE
+        try {
+            await this.logactivityService.log({
+                action: LogActivityAction.UPDATE,
+                module: 'STATIC_PAGES',
+                entity_id: savedPage.id,
+                payload_after: {
+                    title: savedPage.title,
+                },
+            });
+        } catch (error) {
+            this.logger.warn(`Failed to log activity: ${error.message}`);
+        }
+
+        return savedPage;
     }
 
     async remove(id: string) {
+        const pageToDelete = await this.staticPageRepository.findOneBy({ id });
+
+        const deletedData = pageToDelete ? {
+            title: pageToDelete.title,
+        } : {};
+
         const result = await this.staticPageRepository.delete(id);
         if (result.affected === 0) throw new NotFoundException('Halaman statis tidak ditemukan');
+
+        // Log activity - DELETE
+        try {
+            await this.logactivityService.log({
+                action: LogActivityAction.DELETE,
+                module: 'STATIC_PAGES',
+                entity_id: id,
+                payload_before: deletedData,
+            });
+        } catch (error) {
+            this.logger.warn(`Failed to log activity: ${error.message}`);
+        }
+
         return { deleted: true };
     }
 

@@ -14,12 +14,20 @@ export enum LogActivityAction {
 @Index('idx_activity_log_created', ['created_at'])
 @Index('idx_activity_log_admin', ['admin_id'])
 @Index('idx_activity_log_puskesmas_created', ['puskesmas_id', 'created_at'])
+@Index('idx_activity_log_action', ['action'])
+@Index('idx_activity_log_module', ['module'])
+@Index('idx_log_puskesma_created', ['puskesmas_id', 'created_at'])
+@Index('idx_log_admin_created', ['admin_id', 'created_at'])
+@Index('idx_log_module_action', ['module', 'action'])
 export class LogActivity {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
     @Column({ nullable: true })
     admin_id: string;
+
+    @Column({ nullable: true })
+    admin_name: string;
 
     @Column({ nullable: true })
     puskesmas_id: string;
@@ -33,8 +41,9 @@ export class LogActivity {
     @Column({ nullable: true })
     module: string;
 
-    @Column({ nullable: true })
-    entity_id: string;
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  entity_id: string | null; // ID entity target, wajib string/number, jangan object
+
 
     @Column({ type: 'json', nullable: true })
     payload_before: Record<string, any>;
@@ -47,6 +56,15 @@ export class LogActivity {
 
     @Column({ nullable: true })
     user_agent: string;
+
+    @Column({ nullable: true })
+    route: string;
+
+    @Column({ nullable: true })
+    method: string;
+
+    @Column({ nullable: true })
+    status_code: number;
 
     @CreateDateColumn()
     created_at: Date;

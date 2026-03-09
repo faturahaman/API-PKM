@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Page } from './entity/page.entity';
@@ -8,9 +8,12 @@ import { UpdatePageDto } from './dto/update-page.dto';
 
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+import { LogactivityService } from '../logactivity/logactivity.service';
+import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
 
 @Injectable()
 export class PagesService {
+    private readonly logger = new Logger(PagesService.name);
     private pageRepository: BaseTenantRepository<Page>;
     private menuRepository: BaseTenantRepository<Menu>;
 
@@ -20,6 +23,7 @@ export class PagesService {
         @InjectRepository(Menu)
         menuRepositoryNative: Repository<Menu>,
         private readonly tenantContextService: TenantContextService,
+        private readonly logactivityService: LogactivityService,
     ) {
         this.pageRepository = new BaseTenantRepository(pageRepositoryNative, tenantContextService);
         this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
@@ -64,7 +68,24 @@ export class PagesService {
             page.menu = null;
         }
 
-        return this.pageRepository.save(page);
+        const savedPage = await this.pageRepository.save(page);
+
+        // Log activity - CREATE
+        try {
+            await this.logactivityService.log({
+                action: LogActivityAction.CREATE,
+                module: 'PAGES',
+                entity_id: savedPage.id,
+                payload_after: {
+                    title: savedPage.title,
+                    type: savedPage.type,
+                },
+            });
+        } catch (error) {
+            this.logger.warn(`Failed to log activity: ${error.message}`);
+        }
+
+        return savedPage;
     }
 
     async findAllAdmin(search?: string, page: number = 1, limit: number = 10) {
@@ -235,12 +256,49 @@ export class PagesService {
         }
 
         this.pageRepository.merge(pageData, updateData);
-        return this.pageRepository.save(pageData);
+        const savedPage = await this.pageRepository.save(pageData);
+
+        // Log activity - UPDATE
+        try {
+            await this.logactivityService.log({
+                action: LogActivityAction.UPDATE,
+                module: 'PAGES',
+                entity_id: savedPage.id,
+                payload_after: {
+                    title: savedPage.title,
+                    type: savedPage.type,
+                },
+            });
+        } catch (error) {
+            this.logger.warn(`Failed to log activity: ${error.message}`);
+        }
+
+        return savedPage;
     }
 
     async remove(id: string) {
+        const pageToDelete = await this.pageRepository.findOneBy({ id });
+        if (!pageToDelete) throw new NotFoundException('Halaman tidak ditemukan');
+
+        const deletedData = {
+            title: pageToDelete.title,
+            type: pageToDelete.type,
+        };
+
         const result = await this.pageRepository.delete(id);
-        if (result.affected === 0) throw new NotFoundException('Halaman tidak ditemukan');
+
+        // Log activity - DELETE
+        try {
+            await this.logactivityService.log({
+                action: LogActivityAction.DELETE,
+                module: 'PAGES',
+                entity_id: id,
+                payload_before: deletedData,
+            });
+        } catch (error) {
+            this.logger.warn(`Failed to log activity: ${error.message}`);
+        }
+
         return { deleted: true };
     }
 

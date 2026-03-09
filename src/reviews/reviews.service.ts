@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Review } from './entity/review.entity';
@@ -8,16 +8,20 @@ import { RecaptchaService } from '../common/recaptcha/recaptcha.service';
 
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+import { LogactivityService } from '../logactivity/logactivity.service';
+import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
 
 @Injectable()
 export class ReviewsService {
+  private readonly logger = new Logger(ReviewsService.name);
   private reviewRepository: BaseTenantRepository<Review>;
 
   constructor(
     @InjectRepository(Review)
     reviewRepositoryNative: Repository<Review>,
     private readonly recaptchaService: RecaptchaService,
-    private readonly tenantContextService: TenantContextService
+    private readonly tenantContextService: TenantContextService,
+    private readonly logactivityService: LogactivityService,
   ) {
     this.reviewRepository = new BaseTenantRepository(reviewRepositoryNative, tenantContextService);
   }
@@ -63,10 +67,27 @@ export class ReviewsService {
       throw new NotFoundException('Review tidak ditemukan');
     }
 
+    const beforeStatus = review.is_publish;
+
     if (updateDto.is_publish !== undefined) {
       review.is_publish = updateDto.is_publish;
     }
 
-    return this.reviewRepository.save(review);
+    const savedReview = await this.reviewRepository.save(review);
+
+    // Log activity - UPDATE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.UPDATE,
+        module: 'REVIEWS',
+        entity_id: savedReview.id,
+        payload_before: { is_publish: beforeStatus },
+        payload_after: { is_publish: savedReview.is_publish },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
+    }
+
+    return savedReview;
   }
 }

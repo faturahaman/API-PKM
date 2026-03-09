@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException, ConflictException, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Not } from 'typeorm';
 import { Album } from './entity/album.entity';
@@ -7,16 +7,20 @@ import { CreateAlbumDto } from './dto/create-album.dto';
 
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
+import { LogactivityService } from '../logactivity/logactivity.service';
+import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
 
 @Injectable()
 export class AlbumService {
+  private readonly logger = new Logger(AlbumService.name);
   private albumRepository: BaseTenantRepository<Album>;
 
   constructor(
     @InjectRepository(Album)
     albumRepositoryNative: Repository<Album>,
     private galleryService: GalleryService,
-    private readonly tenantContextService: TenantContextService
+    private readonly tenantContextService: TenantContextService,
+    private readonly logactivityService: LogactivityService,
   ) {
     this.albumRepository = new BaseTenantRepository(albumRepositoryNative, tenantContextService);
   }
@@ -48,6 +52,21 @@ export class AlbumService {
 
     if (photo_ids && photo_ids.length > 0) {
       await this.galleryService.updateAlbumId(photo_ids, savedAlbum.id);
+    }
+
+    // Log activity - CREATE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.CREATE,
+        module: 'ALBUM',
+        entity_id: savedAlbum.id,
+        payload_after: {
+          album_title: savedAlbum.album_title,
+          count: savedAlbum.count,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
     }
 
     return savedAlbum;
@@ -100,8 +119,27 @@ export class AlbumService {
       throw new NotFoundException('Album tidak ditemukan');
     }
 
+    const deletedData = {
+      album_title: album.album_title,
+      count: album.count,
+    };
+
     await this.galleryService.resetAlbumId(id);
-    return this.albumRepository.remove(album);
+    const result = await this.albumRepository.remove(album);
+
+    // Log activity - DELETE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.DELETE,
+        module: 'ALBUM',
+        entity_id: id,
+        payload_before: deletedData,
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
+    }
+
+    return result;
   }
 
   async update(id: string, updateData: Partial<Album>) {
@@ -118,6 +156,12 @@ export class AlbumService {
       }
     }
 
+    const oldAlbum = await this.albumRepository.findOne({ where: { id } });
+    const beforeData = oldAlbum ? {
+      album_title: oldAlbum.album_title,
+      count: oldAlbum.count,
+    } : {};
+
     const album = await this.albumRepository.preload({
       id: id,
       ...updateData,
@@ -127,6 +171,24 @@ export class AlbumService {
       throw new NotFoundException('Album tidak ditemukan');
     }
 
-    return this.albumRepository.save(album);
+    const savedAlbum = await this.albumRepository.save(album);
+
+    // Log activity - UPDATE
+    try {
+      await this.logactivityService.log({
+        action: LogActivityAction.UPDATE,
+        module: 'ALBUM',
+        entity_id: savedAlbum.id,
+        payload_before: beforeData,
+        payload_after: {
+          album_title: savedAlbum.album_title,
+          count: savedAlbum.count,
+        },
+      });
+    } catch (error) {
+      this.logger.warn(`Failed to log activity: ${error.message}`);
+    }
+
+    return savedAlbum;
   }
 }

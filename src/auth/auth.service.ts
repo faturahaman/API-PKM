@@ -9,6 +9,8 @@ import { AdminRole } from 'src/admins/entity/admin.entity';
 import { SwitchTenantDto } from './dto/switch-tenant.dto';
 import { PuskesmasService } from 'src/puskesmas/puskesmas.service';
 import { PuskesmasStatus } from 'src/puskesmas/entity/puskesmas.entity';
+import { LogactivityService } from 'src/logactivity/logactivity.service';
+import { LogActivityAction } from 'src/logactivity/entity/log-activity.entity';
 
 @Injectable()
 export class AuthService {
@@ -18,10 +20,11 @@ export class AuthService {
         private jwtService: JwtService,
         private recaptchaService: RecaptchaService,
         private puskesmasService: PuskesmasService,
+        private logactivityService: LogactivityService,
     ) { }
 
     async signIn(signInDto: CreateUserDto) {
-        this.logger.log(`Attempting signIn for: ${signInDto.name}`);
+        this.logger.log(`Login attempt for user`);
 
         // Validate recaptcha token exists
         if (!signInDto.recaptchaToken) {
@@ -30,25 +33,25 @@ export class AuthService {
 
         try {
             await this.recaptchaService.verify(signInDto.recaptchaToken);
-            this.logger.log(`reCAPTCHA verified for: ${signInDto.name}`);
+            this.logger.log(`reCAPTCHA verified`);
         } catch (e) {
-            this.logger.error(`reCAPTCHA FAILED for: ${signInDto.name}`, e.message);
+            this.logger.error(`reCAPTCHA verification failed: ${e.message}`);
             throw e;
         }
 
         const admin = await this.adminsService.findOneByName(signInDto.name);
         if (!admin) {
-            this.logger.warn(`Admin not found: ${signInDto.name}`);
+            this.logger.warn(`Login failed: user not found`);
             throw new UnauthorizedException('Nama atau Password Salah!');
         }
-        this.logger.log(`Admin found: ${admin.name}, role: ${admin.role}, puskesmas_id: ${admin.puskesmas_id}`);
+        this.logger.log(`Admin found: role=${admin.role}`);
 
         const isPasswordValid = await bcrypt.compare(signInDto.password, admin.password);
         if (!isPasswordValid) {
-            this.logger.warn(`Invalid password for: ${signInDto.name}`);
+            this.logger.warn(`Login failed: invalid password for user`);
             throw new UnauthorizedException('Nama atau Password Salah!');
         }
-        this.logger.log(`Password valid for: ${signInDto.name}`);
+        this.logger.log(`Password valid for user`);
 
         const payload: JwtPayload = {
             sub: admin.id,
@@ -87,6 +90,23 @@ export class AuthService {
         await this.adminsService.updateCurrentToken(admin.id, token);
         this.logger.log(`current_token updated in DB for: ${signInDto.name}`);
 
+        // Log successful login
+        try {
+            await this.logactivityService.log({
+                action: LogActivityAction.LOGIN,
+                module: 'AUTH',
+                admin_id: admin.id,
+                admin_name: admin.name,
+                puskesmas_id: admin.puskesmas_id,
+                payload_after: {
+                    role: admin.role,
+                    loginTime: new Date().toISOString(),
+                },
+            });
+        } catch (logError) {
+            this.logger.warn(`Failed to log login activity: ${logError.message}`);
+        }
+
         return {
             access_token: token,
             user: {
@@ -116,6 +136,24 @@ export class AuthService {
 
             const token = await this.jwtService.signAsync(payload);
             await this.adminsService.updateCurrentToken(user.sub, token);
+
+            // Log switch to global view
+            try {
+                await this.logactivityService.log({
+                    action: LogActivityAction.SWITCH_CONTEXT,
+                    module: 'AUTH',
+                    admin_id: user.sub,
+                    admin_name: user.name,
+                    puskesmas_id: user.puskesmas_id,
+                    payload_after: {
+                        previousTenant: user.active_tenant,
+                        newTenant: null,
+                        view: 'global',
+                    },
+                });
+            } catch (logError) {
+                this.logger.warn(`Failed to log switch tenant activity: ${logError.message}`);
+            }
 
             return {
                 access_token: token,
@@ -156,6 +194,24 @@ export class AuthService {
         // Update the admin's current token
         await this.adminsService.updateCurrentToken(user.sub, token);
 
+        // Log successful tenant switch
+        try {
+            await this.logactivityService.log({
+                action: LogActivityAction.SWITCH_CONTEXT,
+                module: 'AUTH',
+                admin_id: user.sub,
+                admin_name: user.name,
+                puskesmas_id: user.puskesmas_id,
+                payload_after: {
+                    previousTenant: user.active_tenant,
+                    newTenant: switchTenantDto.tenant_id,
+                    puskesmasName: targetPuskesmas.name,
+                },
+            });
+        } catch (logError) {
+            this.logger.warn(`Failed to log switch tenant activity: ${logError.message}`);
+        }
+
         return {
             access_token: token,
             user: {
@@ -166,5 +222,27 @@ export class AuthService {
                 active_tenant_name: targetPuskesmas.name,
             },
         };
+    }
+
+    /**
+     * Logout - should be called from controller
+     */
+    async logout(user: JwtPayload, ipAddress?: string, userAgent?: string) {
+        try {
+            await this.logactivityService.log({
+                action: LogActivityAction.LOGOUT,
+                module: 'AUTH',
+                admin_id: user.sub,
+                admin_name: user.name,
+                puskesmas_id: user.puskesmas_id,
+                ip_address: ipAddress,
+                user_agent: userAgent,
+                payload_after: {
+                    logoutTime: new Date().toISOString(),
+                },
+            });
+        } catch (logError) {
+            this.logger.warn(`Failed to log logout activity: ${logError.message}`);
+        }
     }
 }
