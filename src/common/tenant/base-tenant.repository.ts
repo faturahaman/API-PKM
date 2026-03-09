@@ -1,4 +1,4 @@
-secondimport {
+import {
     Repository,
     SelectQueryBuilder,
     FindManyOptions,
@@ -406,3 +406,4 @@ export class BaseTenantRepository<T extends ObjectLiteral> {
         }
     }
 }
+
