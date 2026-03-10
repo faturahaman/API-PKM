@@ -8,6 +8,9 @@ import { AdminsService } from './admins.service';
 import { createMulterOptions } from '../common/multer.utils';
 import { UpdateAdminDto } from './dto/update-admin.dto';
 import { CreateAdminDto } from './dto/create-admin.dto';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { AdminRole } from './entity/admin.entity';
 
 interface AuthenticatedRequest extends Request {
   user: {
@@ -37,8 +40,10 @@ export class AdminsController {
     return user;
   }
 
-  // Admin Data Management
+  // Admin Data Management - hanya SUPER_ADMIN
   @Get('admins')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
   getAllAdmins(
     @Query('search') search?: string,
     @Query('role') role?: string,
@@ -54,16 +59,22 @@ export class AdminsController {
   }
 
   @Post('admins')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
   createAdmin(@Body() dto: CreateAdminDto) {
     return this.adminsService.create(dto.name, dto.password, dto.role as string, dto.puskesmas_id);
   }
 
   @Get('admins/:id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
   getAdminById(@Param('id') id: string) {
     return this.adminsService.findOne(id);
   }
 
   @Patch('admins/:id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
   updateAdmin(
     @Param('id') id: string,
     @Body() dto: UpdateAdminDto
@@ -72,6 +83,8 @@ export class AdminsController {
   }
 
   @Delete('admins/:id')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
   deleteAdmin(@Param('id') id: string, @Request() req: AuthenticatedRequest) {
     const currentAdminId = req.user.id;
     return this.adminsService.delete(id, currentAdminId);
@@ -87,5 +100,29 @@ export class AdminsController {
     const adminId = req.user.id;
     const photoPath = file ? file.filename : undefined;
     return this.adminsService.updateProfile(adminId, photoPath, body.name);
+  }
+
+  // Endpoint untuk mendapatkan daftar ID puskesmas yang masih bisa ditambahkan operator
+  @Get('available-puskes')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
+  getAvailablePuskesForOperators() {
+    return this.adminsService.getAvailablePuskesmasForOperators();
+  }
+
+  // Endpoint untuk mendapatkan semua operator
+  @Get('operators')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
+  getAllOperators() {
+    return this.adminsService.getAllOperatorsWithPuskes();
+  }
+
+  // Endpoint untuk mendapatkan operator berdasarkan puskes
+  @Get('operators/:puskesId')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
+  getOperatorsByPuskes(@Param('puskesId') puskesId: string) {
+    return this.adminsService.getOperatorsByPuskes(puskesId);
   }
 }

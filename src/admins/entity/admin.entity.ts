@@ -1,5 +1,6 @@
 
-import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from 'typeorm';
+import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn, ManyToOne, JoinColumn } from 'typeorm';
+import { Puskesmas } from '../../puskesmas/entity/puskesmas.entity';
 
 export enum AdminRole {
     OPERATOR = 'OPERATOR',
@@ -33,6 +34,11 @@ export class Admin {
     // For OPERATOR role - the puskesmas they manage
     @Column({ nullable: true })
     puskesmas_id: string;
+
+    // Relation to puskesmas
+    @ManyToOne(() => Puskesmas, { nullable: true, eager: true })
+    @JoinColumn({ name: 'puskesmas_id' })
+    puskesmas: Puskesmas;
 
     @CreateDateColumn()
     created_at: Date;

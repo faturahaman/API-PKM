@@ -20,52 +20,52 @@ export enum LogActivityAction {
 @Index('idx_log_admin_created', ['admin_id', 'created_at'])
 @Index('idx_log_module_action', ['module', 'action'])
 export class LogActivity {
-    @PrimaryGeneratedColumn('uuid')
-    id: string;
 
-    @Column({ nullable: true })
-    admin_id: string;
-
-    @Column({ nullable: true })
-    admin_name: string;
-
-    @Column({ nullable: true })
-    puskesmas_id: string;
-
-    @Column({
-        type: 'enum',
-        enum: LogActivityAction,
-    })
-    action: string;
-
-    @Column({ nullable: true })
-    module: string;
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
 
   @Column({ type: 'varchar', length: 36, nullable: true })
-  entity_id: string | null; // ID entity target, wajib string/number, jangan object
+  admin_id: string;
 
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  admin_name: string;
 
-    @Column({ type: 'json', nullable: true })
-    payload_before: Record<string, any>;
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  puskesmas_id: string;
 
-    @Column({ type: 'json', nullable: true })
-    payload_after: Record<string, any>;
+  @Column({
+    type: 'enum',
+    enum: LogActivityAction,
+  })
+  action: string;
 
-    @Column({ nullable: true })
-    ip_address: string;
+  @Column({ type: 'varchar', length: 100, nullable: true })
+  module: string;
 
-    @Column({ nullable: true })
-    user_agent: string;
+  @Column({ type: 'varchar', length: 36, nullable: true })
+  entity_id: string | null;
 
-    @Column({ nullable: true })
-    route: string;
+  @Column({ type: 'json', nullable: true })
+  payload_before: Record<string, any>;
 
-    @Column({ nullable: true })
-    method: string;
+  @Column({ type: 'json', nullable: true })
+  payload_after: Record<string, any>;
 
-    @Column({ nullable: true })
-    status_code: number;
+  @Column({ type: 'varchar', length: 45, nullable: true })
+  ip_address: string;
 
-    @CreateDateColumn()
-    created_at: Date;
+  @Column({ type: 'text', nullable: true })
+  user_agent: string;
+
+  @Column({ type: 'varchar', length: 150, nullable: true })
+  route: string;
+
+  @Column({ type: 'varchar', length: 10, nullable: true })
+  method: string;
+
+  @Column({ type: 'smallint', nullable: true })
+  status_code: number;
+
+  @CreateDateColumn()
+  created_at: Date;
 }

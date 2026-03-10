@@ -1,4 +1,4 @@
-import { IsString, MinLength, IsOptional, IsEnum, Matches, IsUUID } from 'class-validator';
+import { IsString, MinLength, IsOptional, IsEnum, Matches, IsUUID, ValidateIf } from 'class-validator';
 import { SanitizeText } from '../../common/decorators/sanitize.decorator';
 import { AdminRole } from '../entity/admin.entity';
 
@@ -17,7 +17,14 @@ export class CreateAdminDto {
     @IsEnum(AdminRole)
     role?: AdminRole;
 
-    @IsOptional()
+    // puskesmas_id wajib jika role adalah OPERATOR
+    @ValidateIf(o => o.role === AdminRole.OPERATOR)
     @IsUUID()
     puskesmas_id?: string;
+
+    // Untuk SUPER_ADMIN, biarkan undefined (akan divalidasi di service)
+    @ValidateIf(o => !o.role || o.role === AdminRole.SUPER_ADMIN)
+    @IsOptional()
+    @IsUUID()
+    puskesmas_id_super?: string;
 }

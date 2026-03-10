@@ -12,6 +12,11 @@ export class UpdateAdminDto {
     @MinLength(8)
     password?: string;
 
+    // Konfirmasi password - wajib jika password diisi
+    @IsOptional()
+    @IsString()
+    password_confirmation?: string;
+
     @IsOptional()
     @IsString()
     photo?: string;
