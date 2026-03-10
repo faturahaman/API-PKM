@@ -9,13 +9,8 @@ async function bootstrap() {
   const allowedOrigins = process.env.CORS_ORIGINS
     ? process.env.CORS_ORIGINS.split(',').map(o => o.trim())
     : process.env.NODE_ENV === 'production'
-<<<<<<< HEAD
       ? []  // Block in production if not configured
       : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://pkm-bogor-tengah.localhost:3000', 'http://pkm-bogor-utara.localhost:3000', 'http://pkm-bogor-selatan.localhost:3000'];
-=======
-      ? ['http://localhost:3000']  // Fallback ke localhost di production (harus di-override)
-      : ['http://localhost:3000', 'http://127.0.0.1:3000'];
->>>>>>> cafcb402ff2cde802e013ed8809868a228e4af88
 
   app.enableCors({
   origin: (origin, callback) => {
@@ -23,7 +18,10 @@ async function bootstrap() {
 
     const allowed = [
       'http://localhost:3000',
-      'http://127.0.0.1:3000'
+      'http://127.0.0.1:3000',
+      'http://pkm-bogor-tengah.localhost:3000',
+      'http://pkm-bogor-utara.localhost:3000',
+      'http://pkm-bogor-selatan.localhost:3000'
     ]
 
     const isLocalhostSubdomain = origin.endsWith('.localhost:3000')

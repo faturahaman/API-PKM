@@ -16,13 +16,9 @@ export class VisitorController {
     return this.visitorService.create(createVisitorDto);
   }
 
-<<<<<<< HEAD
   @Post('log')
-=======
   @UseGuards(ThrottlerGuard)
   @Throttle({ short: { ttl: 60000, limit: 30 }, medium: { ttl: 3600000, limit: 500 } })
-  @Post('track')
->>>>>>> cafcb402ff2cde802e013ed8809868a228e4af88
   @HttpCode(200)
   autoTrack(@Req() req: Request) {
     return this.visitorService.trackVisitor(req);
