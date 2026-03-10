@@ -17,15 +17,6 @@ export class Puskesmas {
     @Column({ unique: true })
     slug: string;
 
-    @Column({ nullable: true })
-    alamat: string;
-
-    @Column({ nullable: true })
-    logo_path: string;
-
-    @Column({ nullable: true })
-    primary_color: string;
-
     @Column({
         type: 'enum',
         enum: PuskesmasStatus,

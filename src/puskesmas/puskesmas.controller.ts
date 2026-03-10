@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseArrayPipe, UseInterceptors, UploadedFile, Req } from '@nestjs/common';
 import { PuskesmasService } from './puskesmas.service';
 import { CreatePuskesmasDto } from './dto/create-puskesmas.dto';
 import { AuthGuard } from '@nestjs/passport';
@@ -30,8 +30,25 @@ export class PuskesmasController {
 
   @Patch(':id')
   @UseGuards(AuthGuard('jwt'))
-  update(@Param('id') id: string, @Body() updatePuskesmasDto: Partial<CreatePuskesmasDto>) {
-    return this.puskesmasService.update(id, updatePuskesmasDto);
+  update(@Param('id') id: string, @Body() updatePuskesmasDto: any) {
+    // Handle empty or undefined body
+    if (!updatePuskesmasDto) {
+      return this.puskesmasService.findOne(id);
+    }
+
+    // Convert body to clean object - remove undefined/null values and only keep valid fields
+    const cleanData: Partial<CreatePuskesmasDto> = {};
+    if (updatePuskesmasDto.name !== undefined && updatePuskesmasDto.name !== '') {
+      cleanData.name = updatePuskesmasDto.name;
+    }
+    if (updatePuskesmasDto.slug !== undefined && updatePuskesmasDto.slug !== '') {
+      cleanData.slug = updatePuskesmasDto.slug;
+    }
+    if (updatePuskesmasDto.status !== undefined && updatePuskesmasDto.status !== '') {
+      cleanData.status = updatePuskesmasDto.status;
+    }
+
+    return this.puskesmasService.update(id, cleanData);
   }
 
   @Delete(':id')

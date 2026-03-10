@@ -22,7 +22,7 @@ export class TenantMiddleware implements NestMiddleware {
         if (slug && slug !== 'default') {
             const foundPuskesmas = await this.puskesmasRepo.findOne({
                 where: { slug: slug },
-                select: ['id']
+                select: ['id', 'name']
             });
 
             if (foundPuskesmas) {

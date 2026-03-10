@@ -13,28 +13,28 @@ async function bootstrap() {
       : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://pkm-bogor-tengah.localhost:3000', 'http://pkm-bogor-utara.localhost:3000', 'http://pkm-bogor-selatan.localhost:3000'];
 
   app.enableCors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true)
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true)
 
-    const allowed = [
-      'http://localhost:3000',
-      'http://127.0.0.1:3000',
-      'http://pkm-bogor-tengah.localhost:3000',
-      'http://pkm-bogor-utara.localhost:3000',
-      'http://pkm-bogor-selatan.localhost:3000'
-    ]
+      const allowed = [
+        'http://localhost:3000',
+        'http://127.0.0.1:3000',
+        'http://pkm-bogor-tengah.localhost:3000',
+        'http://pkm-bogor-utara.localhost:3000',
+        'http://pkm-bogor-selatan.localhost:3000'
+      ]
 
-    const isLocalhostSubdomain = origin.endsWith('.localhost:3000')
+      const isLocalhostSubdomain = origin.endsWith('.localhost:3000')
 
-    if (allowed.includes(origin) || isLocalhostSubdomain) {
-      return callback(null, true)
-    }
+      if (allowed.includes(origin) || isLocalhostSubdomain) {
+        return callback(null, true)
+      }
 
-    return callback(new Error('Not allowed by CORS'))
-  },
-  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
-  credentials: true,
-})
+      return callback(new Error('Not allowed by CORS'))
+    },
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+    credentials: true,
+  })
 
   app.setGlobalPrefix('api');
 

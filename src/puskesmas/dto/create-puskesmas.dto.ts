@@ -8,18 +8,6 @@ export class CreatePuskesmasDto {
     @IsString()
     slug: string;
 
-    @IsString()
-    @IsOptional()
-    alamat?: string;
-
-    @IsString()
-    @IsOptional()
-    logo_path?: string;
-
-    @IsString()
-    @IsOptional()
-    primary_color?: string;
-
     @IsEnum(PuskesmasStatus)
     @IsOptional()
     status?: PuskesmasStatus;

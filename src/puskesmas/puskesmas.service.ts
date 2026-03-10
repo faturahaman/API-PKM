@@ -30,7 +30,6 @@ export class PuskesmasService implements OnModuleInit {
             const defaultTenant: CreatePuskesmasDto = {
                 name: 'Puskesmas Default',
                 slug: 'default',
-                alamat: '',
                 status: PuskesmasStatus.ACTIVE,
             };
             await this.puskesmasRepository.save(
@@ -77,13 +76,30 @@ export class PuskesmasService implements OnModuleInit {
     async update(id: string, updatePuskesmasDto: Partial<CreatePuskesmasDto>): Promise<Puskesmas | null> {
         const oldPuskesmas = await this.puskesmasRepository.findOne({ where: { id } });
 
-        const beforeData = oldPuskesmas ? {
+        if (!oldPuskesmas) {
+            return null;
+        }
+
+        const beforeData = {
             name: oldPuskesmas.name,
             slug: oldPuskesmas.slug,
             status: oldPuskesmas.status,
-        } : {};
+        };
 
-        await this.puskesmasRepository.update(id, updatePuskesmasDto);
+        // Filter out undefined values and check if there are valid fields to update
+        const validFields: Partial<CreatePuskesmasDto> = {};
+
+        if (updatePuskesmasDto) {
+            if (updatePuskesmasDto.name !== undefined) validFields.name = updatePuskesmasDto.name;
+            if (updatePuskesmasDto.slug !== undefined) validFields.slug = updatePuskesmasDto.slug;
+            if (updatePuskesmasDto.status !== undefined) validFields.status = updatePuskesmasDto.status;
+        }
+
+        // Only perform update if there are valid fields
+        if (Object.keys(validFields).length > 0) {
+            await this.puskesmasRepository.update(id, validFields);
+        }
+
         const updatedPuskesmas = await this.findOne(id);
 
         // Log activity - UPDATE
@@ -103,7 +119,7 @@ export class PuskesmasService implements OnModuleInit {
             this.logger.warn(`Failed to log activity: ${error.message}`);
         }
 
-        return updatedPuskesmas;
+        return updatedPuskesmas || null;
     }
 
     async remove(id: string): Promise<void> {
