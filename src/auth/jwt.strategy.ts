@@ -38,8 +38,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     console.log(`[JwtStrategy] Token validated`);
     // Return the full user object with tenant information
     return {
+      id: admin.id,
       sub: admin.id,
       name: admin.name,
+      photo: admin.photo,
       role: admin.role,
       puskesmas_id: admin.puskesmas_id,
       active_tenant: payload.active_tenant,
