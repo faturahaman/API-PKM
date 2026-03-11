@@ -2,22 +2,34 @@ import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } fr
 import { Observable } from 'rxjs';
 import { TenantContextService } from './tenant-context.service';
 import { AdminRole } from '../../admins/entity/admin.entity';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Puskesmas } from '../../puskesmas/entity/puskesmas.entity';
+
+/**
+ * Tenant Interceptor - Resolves and sets tenant context for each request
+ * 
+ * Priority for tenant resolution:
+ * 1. Authenticated users: JWT puskesmas_id (Operator) or active_tenant (Super Admin)
+ * 2. Public routes: x-tenant-id (UUID) or x-tenant-slug (resolved to UUID)
+ */
 
 @Injectable()
 export class TenantInterceptor implements NestInterceptor {
     private readonly logger = new Logger(TenantInterceptor.name);
 
-    constructor(private readonly tenantContextService: TenantContextService) { }
+    constructor(
+        private readonly tenantContextService: TenantContextService,
+        @InjectRepository(Puskesmas)
+        private readonly puskesmasRepo: Repository<Puskesmas>
+    ) { }
 
-    intercept(context: ExecutionContext, next: CallHandler): Observable<any> {
+    async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
         const req = context.switchToHttp().getRequest<any>();
         const user = req.user;
         const path = req.path || req.url || '';
 
-        // Get existing tenantId from middleware (for public routes)
-        const existingTenantId = this.tenantContextService.getTenantId();
-
-        let tenantId: string | null = existingTenantId;
+        let tenantId: string | null = null;
         let isSuperAdmin = false;
         let role = 'public';
         let userId = 'public';
@@ -28,6 +40,7 @@ export class TenantInterceptor implements NestInterceptor {
 
             if (user.role === AdminRole.SUPER_ADMIN) {
                 // Super Admin: use active_tenant from JWT (set by switch-tenant endpoint)
+                // If no active_tenant, they can view all (null tenantId)
                 tenantId = user.active_tenant || null;
             } else {
                 // Operator: use puskesmas_id from JWT
@@ -37,17 +50,30 @@ export class TenantInterceptor implements NestInterceptor {
             isSuperAdmin = user.role === AdminRole.SUPER_ADMIN;
             role = user.role;
             userId = user.sub;
-        } else if (!tenantId && path.includes('/api')) {
-            // For public routes without auth, try x-tenant-slug header first
+        } else if (path.includes('/api')) {
+            // For public routes without auth, resolve tenant from headers
             const headerTenantSlug = req.headers['x-tenant-slug'] as string;
             const headerTenantId = req.headers['x-tenant-id'] as string;
 
-            if (headerTenantSlug && headerTenantSlug !== 'default') {
-                tenantId = headerTenantSlug;
-            }
-            // Also try x-tenant-id header (UUID format) - accept any valid UUID
+            // Priority: x-tenant-id (UUID) first, then resolve slug
             if (headerTenantId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(headerTenantId as string)) {
+                // Valid UUID format
                 tenantId = headerTenantId as string;
+            } else if (headerTenantSlug && headerTenantSlug !== 'default') {
+                // Resolve slug to UUID
+                try {
+                    const puskesmas = await this.puskesmasRepo.findOne({
+                        where: { slug: headerTenantSlug },
+                        select: ['id']
+                    });
+                    if (puskesmas) {
+                        tenantId = puskesmas.id;
+                    } else {
+                        this.logger.warn(`[TenantInterceptor] Tenant slug "${headerTenantSlug}" not found`);
+                    }
+                } catch (e) {
+                    this.logger.warn(`[TenantInterceptor] Failed to resolve slug: ${e.message}`);
+                }
             }
         }
 

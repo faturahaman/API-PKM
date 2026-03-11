@@ -32,7 +32,7 @@ export class Admin {
     current_token: string;
 
     // For OPERATOR role - the puskesmas they manage
-    @Column({ nullable: true })
+    @Column({ type: 'uuid', nullable: true })
     puskesmas_id: string;
 
     // Relation to puskesmas

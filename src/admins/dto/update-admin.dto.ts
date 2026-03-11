@@ -1,7 +1,8 @@
 import { IsOptional, IsString, MinLength, IsEnum, Matches, IsUUID } from 'class-validator';
 import { AdminRole } from '../entity/admin.entity';
-
+import { ValidateIf } from 'class-validator';
 export class UpdateAdminDto {
+
     @IsOptional()
     @IsString()
     @Matches(/^[a-zA-Z0-9]+$/, { message: 'Nama hanya boleh huruf dan angka, tanpa spasi atau karakter khusus' })
@@ -12,7 +13,6 @@ export class UpdateAdminDto {
     @MinLength(8)
     password?: string;
 
-    // Konfirmasi password - wajib jika password diisi
     @IsOptional()
     @IsString()
     password_confirmation?: string;
@@ -25,7 +25,8 @@ export class UpdateAdminDto {
     @IsEnum(AdminRole)
     role?: AdminRole;
 
-    @IsOptional()
+    // cukup optional saja
+    @ValidateIf(o => o.puskesmas_id !== '' && o.puskesmas_id !== null)
     @IsUUID()
     puskesmas_id?: string;
 }

@@ -64,7 +64,7 @@ export class AdminsService {
     }
 
     // Validasi untuk role OPERATOR
-    if (role === 'OPERATOR' || (!role && 'OPERATOR')) {
+    if (role === AdminRole.OPERATOR || !role){
       const operatorRole = role as AdminRole || AdminRole.OPERATOR;
 
       // Jika puskesmas_id tidak diisi untuk OPERATOR
@@ -99,53 +99,61 @@ export class AdminsService {
     return result;
   }
 
-  async update(id: string, dto: UpdateAdminDto): Promise<Omit<Admin, 'password'>> {
-    const admin = await this.findOne(id);
-    if (!admin) {
-      throw new NotFoundException('Admin tidak ditemukan');
-    }
+ async update(id: string, dto: UpdateAdminDto): Promise<Omit<Admin, 'password'>> {
 
-    // Validasi konfirmasi password jika password diisi
-    if (dto.password) {
-      if (!dto.password_confirmation) {
-        throw new BadRequestException('Konfirmasi password wajib diisi');
-      }
-      if (dto.password !== dto.password_confirmation) {
-        throw new BadRequestException('Password dan konfirmasi password tidak cocok');
-      }
-      dto.password = await bcrypt.hash(dto.password, 10);
-    }
-
-    // Validasi untuk perubahan role atau puskesmas_id
-    const newRole = dto.role || admin.role;
-    const newPuskesmasId = dto.puskesmas_id !== undefined ? dto.puskesmas_id : admin.puskesmas_id;
-
-    // Jika menjadi OPERATOR atau puskesmas_id berubah
-    if (newRole === AdminRole.OPERATOR || (dto.puskesmas_id && dto.puskesmas_id !== admin.puskesmas_id)) {
-      // Validasi: satu operator hanya boleh satu puskes
-      if (newPuskesmasId && admin.role === AdminRole.SUPER_ADMIN && newRole === AdminRole.OPERATOR) {
-        // Cek apakah operator lain sudah diassign ke puskesmas ini
-        const existingOperators = await this.adminRepository
-          .createQueryBuilder('admin')
-          .where('admin.puskesmas_id = :puskesmas_id', { puskesmas_id: newPuskesmasId })
-          .andWhere('admin.role = :role', { role: AdminRole.OPERATOR })
-          .andWhere('admin.id != :id', { id })
-          .getCount();
-
-        if (existingOperators >= AdminsService.MAX_OPERATORS_PER_PUSKESMAS) {
-          throw new BadRequestException(
-            `Puskesmas ini sudah memiliki ${existingOperators} operator. Maksimal ${AdminsService.MAX_OPERATORS_PER_PUSKESMAS} operator per puskesmas.`
-          );
-        }
-      }
-    }
-
-    Object.assign(admin, dto);
-    const saved = await this.adminRepository.save(admin);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: _, ...result } = saved as Admin;
-    return result;
+  if (dto.puskesmas_id === '') {
+    dto.puskesmas_id = undefined;
   }
+
+  const admin = await this.findOne(id);
+  if (!admin) {
+    throw new NotFoundException('Admin tidak ditemukan');
+  }
+
+  // validasi password
+  if (dto.password) {
+    if (!dto.password_confirmation) {
+      throw new BadRequestException('Konfirmasi password wajib diisi');
+    }
+    if (dto.password !== dto.password_confirmation) {
+      throw new BadRequestException('Password dan konfirmasi password tidak cocok');
+    }
+    dto.password = await bcrypt.hash(dto.password, 10);
+  }
+
+  const newRole = dto.role || admin.role;
+  const newPuskesmasId =
+    dto.puskesmas_id !== undefined ? dto.puskesmas_id : admin.puskesmas_id;
+
+  // logic operator
+  if (newRole === AdminRole.OPERATOR) {
+
+    if (!newPuskesmasId) {
+      throw new BadRequestException('Operator harus memiliki puskesmas');
+    }
+
+    const existingOperators = await this.adminRepository
+      .createQueryBuilder('admin')
+      .where('admin.puskesmas_id = :puskesmas_id', { puskesmas_id: newPuskesmasId })
+      .andWhere('admin.role = :role', { role: AdminRole.OPERATOR })
+      .andWhere('admin.id != :id', { id })
+      .getCount();
+
+    if (existingOperators >= AdminsService.MAX_OPERATORS_PER_PUSKESMAS) {
+      throw new BadRequestException(
+        `Puskesmas ini sudah memiliki ${existingOperators} operator`
+      );
+    }
+  }
+
+  Object.assign(admin, dto);
+
+  const saved = await this.adminRepository.save(admin);
+
+  const { password, ...result } = saved as Admin;
+
+  return result;
+}
 
   async delete(id: string, currentAdminId?: string): Promise<void> {
     const admin = await this.findOne(id);

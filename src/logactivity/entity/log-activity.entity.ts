@@ -1,12 +1,12 @@
 import { Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, Index } from 'typeorm';
 
 export enum LogActivityAction {
-    CREATE = 'CREATE',
-    UPDATE = 'UPDATE',
-    DELETE = 'DELETE',
-    LOGIN = 'LOGIN',
-    LOGOUT = 'LOGOUT',
-    SWITCH_CONTEXT = 'SWITCH_CONTEXT',
+  CREATE = 'CREATE',
+  UPDATE = 'UPDATE',
+  DELETE = 'DELETE',
+  LOGIN = 'LOGIN',
+  LOGOUT = 'LOGOUT',
+  SWITCH_CONTEXT = 'SWITCH_CONTEXT',
 }
 
 @Entity('activity_logs')
@@ -16,9 +16,6 @@ export enum LogActivityAction {
 @Index('idx_activity_log_puskesmas_created', ['puskesmas_id', 'created_at'])
 @Index('idx_activity_log_action', ['action'])
 @Index('idx_activity_log_module', ['module'])
-@Index('idx_log_puskesma_created', ['puskesmas_id', 'created_at'])
-@Index('idx_log_admin_created', ['admin_id', 'created_at'])
-@Index('idx_log_module_action', ['module', 'action'])
 export class LogActivity {
 
   @PrimaryGeneratedColumn('uuid')
