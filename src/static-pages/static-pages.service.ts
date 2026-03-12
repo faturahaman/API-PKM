@@ -11,6 +11,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 @Injectable()
 export class StaticPagesService {
@@ -30,7 +31,7 @@ export class StaticPagesService {
         this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
     }
 
-    async create(createStaticPageDto: CreateStaticPageDto, image?: Express.Multer.File) {
+    async create(createStaticPageDto: CreateStaticPageDto, image?: Express.Multer.File, requestMeta?: RequestMetaDto) {
         if (!createStaticPageDto.title || createStaticPageDto.title.trim() === '') {
             throw new BadRequestException('Judul halaman wajib diisi');
         }
@@ -75,6 +76,10 @@ export class StaticPagesService {
                 action: LogActivityAction.CREATE,
                 module: 'STATIC_PAGES',
                 entity_id: savedPage.id,
+                ip_address: requestMeta?.ip_address,
+                user_agent: requestMeta?.user_agent,
+                route: requestMeta?.route,
+                method: requestMeta?.method,
                 payload_after: {
                     title: savedPage.title,
                 },
@@ -144,7 +149,7 @@ export class StaticPagesService {
         };
     }
 
-    async update(id: string, updateStaticPageDto: UpdateStaticPageDto, image?: Express.Multer.File) {
+    async update(id: string, updateStaticPageDto: UpdateStaticPageDto, image?: Express.Multer.File, requestMeta?: RequestMetaDto) {
         const staticPage = await this.staticPageRepository.findOne({
             where: { id },
             relations: ['menu'],
@@ -192,6 +197,10 @@ export class StaticPagesService {
                 action: LogActivityAction.UPDATE,
                 module: 'STATIC_PAGES',
                 entity_id: savedPage.id,
+                ip_address: requestMeta?.ip_address,
+                user_agent: requestMeta?.user_agent,
+                route: requestMeta?.route,
+                method: requestMeta?.method,
                 payload_after: {
                     title: savedPage.title,
                 },
@@ -203,7 +212,7 @@ export class StaticPagesService {
         return savedPage;
     }
 
-    async remove(id: string) {
+    async remove(id: string, requestMeta?: RequestMetaDto) {
         const pageToDelete = await this.staticPageRepository.findOneBy({ id });
 
         const deletedData = pageToDelete ? {
@@ -219,6 +228,10 @@ export class StaticPagesService {
                 action: LogActivityAction.DELETE,
                 module: 'STATIC_PAGES',
                 entity_id: id,
+                ip_address: requestMeta?.ip_address,
+                user_agent: requestMeta?.user_agent,
+                route: requestMeta?.route,
+                method: requestMeta?.method,
                 payload_before: deletedData,
             });
         } catch (error) {

@@ -9,6 +9,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 @Injectable()
 export class AlbumService {
@@ -25,7 +26,7 @@ export class AlbumService {
     this.albumRepository = new BaseTenantRepository(albumRepositoryNative, tenantContextService);
   }
 
-  async create(createAlbumDto: CreateAlbumDto) {
+  async create(createAlbumDto: CreateAlbumDto, requestMeta?: RequestMetaDto) {
     const { photo_ids, ...albumData } = createAlbumDto;
 
     // Check existing name
@@ -60,6 +61,10 @@ export class AlbumService {
         action: LogActivityAction.CREATE,
         module: 'ALBUM',
         entity_id: savedAlbum.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_after: {
           album_title: savedAlbum.album_title,
           count: savedAlbum.count,
@@ -113,7 +118,7 @@ export class AlbumService {
     return this.albumRepository.findOne({ where: { id } });
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestMeta?: RequestMetaDto) {
     const album = await this.albumRepository.findOne({ where: { id } });
     if (!album) {
       throw new NotFoundException('Album tidak ditemukan');
@@ -133,6 +138,10 @@ export class AlbumService {
         action: LogActivityAction.DELETE,
         module: 'ALBUM',
         entity_id: id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: deletedData,
       });
     } catch (error) {
@@ -142,7 +151,7 @@ export class AlbumService {
     return result;
   }
 
-  async update(id: string, updateData: Partial<Album>) {
+  async update(id: string, updateData: Partial<Album>, requestMeta?: RequestMetaDto) {
 
     if (updateData.album_title) {
       const existing = await this.albumRepository.findOne({
@@ -179,6 +188,10 @@ export class AlbumService {
         action: LogActivityAction.UPDATE,
         module: 'ALBUM',
         entity_id: savedAlbum.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: beforeData,
         payload_after: {
           album_title: savedAlbum.album_title,

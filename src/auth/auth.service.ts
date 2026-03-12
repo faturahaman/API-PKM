@@ -11,6 +11,7 @@ import { PuskesmasService } from 'src/puskesmas/puskesmas.service';
 import { PuskesmasStatus } from 'src/puskesmas/entity/puskesmas.entity';
 import { LogactivityService } from 'src/logactivity/logactivity.service';
 import { LogActivityAction } from 'src/logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from 'src/common/dto/request-meta.dto';
 
 @Injectable()
 export class AuthService {
@@ -23,7 +24,7 @@ export class AuthService {
         private logactivityService: LogactivityService,
     ) { }
 
-    async signIn(signInDto: CreateUserDto) {
+    async signIn(signInDto: CreateUserDto, requestMeta?: RequestMetaDto) {
         this.logger.log(`Login attempt for user`);
 
         // Validate recaptcha token exists
@@ -98,6 +99,10 @@ export class AuthService {
                 admin_id: admin.id,
                 admin_name: admin.name,
                 puskesmas_id: admin.puskesmas_id,
+                ip_address: requestMeta?.ip_address,
+                user_agent: requestMeta?.user_agent,
+                route: requestMeta?.route,
+                method: requestMeta?.method,
                 payload_after: {
                     role: admin.role,
                     loginTime: new Date().toISOString(),
@@ -118,7 +123,7 @@ export class AuthService {
         };
     }
 
-    async switchTenant(user: JwtPayload, switchTenantDto: SwitchTenantDto) {
+    async switchTenant(user: JwtPayload, switchTenantDto: SwitchTenantDto, requestMeta?: RequestMetaDto) {
         // Only SUPER_ADMIN can switch tenants
         if (user.role !== AdminRole.SUPER_ADMIN) {
             throw new ForbiddenException('Hanya Super Admin yang dapat Switch tenant.');
@@ -145,6 +150,10 @@ export class AuthService {
                     admin_id: user.sub,
                     admin_name: user.name,
                     puskesmas_id: user.puskesmas_id,
+                    ip_address: requestMeta?.ip_address,
+                    user_agent: requestMeta?.user_agent,
+                    route: requestMeta?.route,
+                    method: requestMeta?.method,
                     payload_after: {
                         previousTenant: user.active_tenant,
                         newTenant: null,
@@ -202,6 +211,10 @@ export class AuthService {
                 admin_id: user.sub,
                 admin_name: user.name,
                 puskesmas_id: user.puskesmas_id,
+                ip_address: requestMeta?.ip_address,
+                user_agent: requestMeta?.user_agent,
+                route: requestMeta?.route,
+                method: requestMeta?.method,
                 payload_after: {
                     previousTenant: user.active_tenant,
                     newTenant: switchTenantDto.tenant_id,

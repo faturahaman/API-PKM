@@ -10,6 +10,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 @Injectable()
 export class MenusService {
@@ -25,7 +26,7 @@ export class MenusService {
     this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
   }
 
-  async create(createMenuDto: CreateMenuDto) {
+  async create(createMenuDto: CreateMenuDto, requestMeta?: RequestMetaDto) {
     const { parent_id, title, ...menuData } = createMenuDto;
 
     const slug = slugify(title, { lower: true, strict: true });
@@ -53,6 +54,10 @@ export class MenusService {
         action: LogActivityAction.CREATE,
         module: 'MENU',
         entity_id: savedMenu.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_after: {
           title: savedMenu.title,
           slug: savedMenu.slug,
@@ -198,7 +203,7 @@ export class MenusService {
     return menu;
   }
 
-  async update(id: string, updateMenuDto: UpdateMenuDto) {
+  async update(id: string, updateMenuDto: UpdateMenuDto, requestMeta?: RequestMetaDto) {
     const menu = await this.findOne(id);
     const { parent_id, ...updateData } = updateMenuDto;
 
@@ -233,6 +238,10 @@ export class MenusService {
         action: LogActivityAction.UPDATE,
         module: 'MENU',
         entity_id: savedMenu.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_after: {
           title: savedMenu.title,
           slug: savedMenu.slug,
@@ -246,7 +255,7 @@ export class MenusService {
     return savedMenu;
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestMeta?: RequestMetaDto) {
     const menu = await this.findOne(id);
 
     const children = await this.menuRepository.find({
@@ -271,6 +280,10 @@ export class MenusService {
         action: LogActivityAction.DELETE,
         module: 'MENU',
         entity_id: id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: deletedData,
       });
     } catch (error) {

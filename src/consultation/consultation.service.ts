@@ -11,6 +11,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 @Injectable()
 export class ConsultationService {
@@ -99,7 +100,7 @@ export class ConsultationService {
     return { message: 'Balasan berhasil dikirim dan disimpan!' };
   }
 
-  async remove(id: number) {
+  async remove(id: number, requestMeta?: RequestMetaDto) {
     const consultationToDelete = await this.consultationRepo.findOne({ where: { id } });
 
     const deletedData = consultationToDelete ? {
@@ -118,6 +119,10 @@ export class ConsultationService {
         action: LogActivityAction.DELETE,
         module: 'CONSULTATION',
         entity_id: String(id),
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: deletedData,
       });
     } catch (error) {
