@@ -1,11 +1,11 @@
 import { Module, Global, MiddlewareConsumer, NestModule } from '@nestjs/common';
-import { APP_INTERCEPTOR } from '@nestjs/core';
-import { TypeOrmModule } from '@nestjs/typeorm'; // Tambahin ini
+import { APP_INTERCEPTOR, APP_GUARD } from '@nestjs/core';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { TenantContextService } from './tenant-context.service';
 import { TenantInterceptor } from './tenant.interceptor';
 import { TenantGuard } from './tenant.guard';
 import { TenantMiddleware } from './tenant.middleware';
-import { Puskesmas } from '../../puskesmas/entity/puskesmas.entity'; // Pastiin path entity bener
+import { Puskesmas } from '../../puskesmas/entity/puskesmas.entity';
 
 @Global()
 @Module({
@@ -20,6 +20,10 @@ import { Puskesmas } from '../../puskesmas/entity/puskesmas.entity'; // Pastiin 
         {
             provide: APP_INTERCEPTOR,
             useExisting: TenantInterceptor,
+        },
+        {
+            provide: APP_GUARD,
+            useExisting: TenantGuard,
         },
     ],
     exports: [

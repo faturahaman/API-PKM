@@ -2,6 +2,9 @@ import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, ParseArra
 import { PuskesmasService } from './puskesmas.service';
 import { CreatePuskesmasDto } from './dto/create-puskesmas.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
+import { AdminRole } from '../admins/entity/admin.entity';
 
 @Controller('puskesmas')
 export class PuskesmasController {
@@ -20,6 +23,12 @@ export class PuskesmasController {
   @Get('slug/:slug')
   findBySlug(@Param('slug') slug: string) {
     return this.puskesmasService.findBySlug(slug);
+  }
+
+  // Public endpoint to check tenant status - used by frontend for redirect logic
+  @Get('status/:slug')
+  getStatus(@Param('slug') slug: string) {
+    return this.puskesmasService.getStatus(slug);
   }
 
   @Post()
@@ -55,5 +64,50 @@ export class PuskesmasController {
   @UseGuards(AuthGuard('jwt'))
   remove(@Param('id') id: string) {
     return this.puskesmasService.remove(id);
+  }
+
+  // === Status Management Endpoints (Super Admin Only) ===
+
+  @Patch(':id/activate')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
+  activate(@Param('id') id: string, @Req() req: any) {
+    const adminId = req.user.sub;
+    return this.puskesmasService.activate(id, adminId);
+  }
+
+  @Patch(':id/deactivate')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
+  deactivate(@Param('id') id: string, @Body('reason') reason: string, @Req() req: any) {
+    const adminId = req.user.sub;
+    return this.puskesmasService.deactivate(id, adminId, reason);
+  }
+
+  @Patch(':id/suspend')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
+  suspend(@Param('id') id: string, @Body('reason') reason: string, @Req() req: any) {
+    const adminId = req.user.sub;
+    return this.puskesmasService.suspend(id, adminId, reason);
+  }
+
+  @Patch(':id/maintenance')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
+  setMaintenance(
+    @Param('id') id: string,
+    @Body('message') message: string,
+    @Req() req: any
+  ) {
+    const adminId = req.user.sub;
+    return this.puskesmasService.setMaintenance(id, adminId, message);
+  }
+
+  @Patch(':id/maintenance/remove')
+  @UseGuards(AuthGuard('jwt'), RolesGuard)
+  @Roles(AdminRole.SUPER_ADMIN)
+  removeMaintenance(@Param('id') id: string) {
+    return this.puskesmasService.removeMaintenance(id);
   }
 }
