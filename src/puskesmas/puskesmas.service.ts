@@ -39,13 +39,23 @@ export class PuskesmasService implements OnModuleInit {
         }
     }
 
-    async findAll(page: number = 1, limit: number = 10) {
+    async findAll(page: number = 1, limit: number = 10, search?: string) {
         const skip = (page - 1) * limit;
-        const [data, total] = await this.puskesmasRepository.findAndCount({
-            skip,
-            take: limit,
-            order: { name: 'ASC' },
-        });
+
+        const queryBuilder = this.puskesmasRepository.createQueryBuilder('puskesmas');
+
+        // Add search functionality
+        if (search) {
+            queryBuilder.where('LOWER(puskesmas.name) LIKE LOWER(:search)', {
+                search: `%${search}%`
+            })
+        }
+
+        const [data, total] = await queryBuilder
+            .orderBy('puskesmas.name', 'ASC')
+            .skip(skip)
+            .take(limit)
+            .getManyAndCount();
 
         return {
             docs: data,
