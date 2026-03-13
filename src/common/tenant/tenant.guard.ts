@@ -39,21 +39,11 @@ export class TenantGuard implements CanActivate {
         const request = context.switchToHttp().getRequest<any>();
         const user = request.user;
 
-        // Get puskesmas from request (set by TenantInterceptor if already resolved)
-        let puskesmas = request.puskesmas;
-
-        // If not set by Interceptor, resolve it here (since Guard runs before Interceptor)
-        if (!puskesmas) {
-            puskesmas = await this.resolveTenant(request);
-        }
+        // Get puskesmas from request (set by TenantInterceptor)
+        const puskesmas = request.puskesmas;
 
         // Debug log
         this.logger.log('[TenantGuard] Checking tenant status. Puskesma: ' + (puskesmas?.name || 'none') + ', Status: ' + (puskesmas?.status || 'none'));
-
-        // Attach to request for downstream use
-        if (puskesmas) {
-            request.puskesmas = puskesmas;
-        }
 
         // No tenant resolved - allow (might be public route without tenant)
         if (!puskesmas) {
@@ -129,68 +119,5 @@ export class TenantGuard implements CanActivate {
         }
 
         return true;
-    }
-
-    /**
-     * Resolve tenant from request headers or hostname
-     * Priority:
-     * 1. x-tenant-id (UUID)
-     * 2. x-tenant-slug
-     * 3. Host header (subdomain)
-     */
-    private async resolveTenant(request: any): Promise<Puskesmas | null> {
-        const headers = request.headers || {};
-        const host = headers.host || '';
-
-        let tenantId: string | null = null;
-
-        // Priority 1: x-tenant-id header
-        if (headers['x-tenant-id']) {
-            tenantId = headers['x-tenant-id'];
-            this.logger.log('[TenantGuard] Resolving from x-tenant-id header: ' + tenantId);
-        }
-        // Priority 2: x-tenant-slug header
-        else if (headers['x-tenant-slug']) {
-            const slug = headers['x-tenant-slug'];
-            this.logger.log('[TenantGuard] Resolving from x-tenant-slug header: ' + slug);
-            const p = await this.puskesmasRepo.findOne({ where: { slug }, select: ['id'] });
-            tenantId = p?.id || null;
-        }
-        // Priority 3: Subdomain from hostname
-        else if (host) {
-            const isLocalhostDev = host.includes('localhost') || host.includes('.local');
-            if (isLocalhostDev) {
-                const hostname = host.split(':')[0];
-                const parts = hostname.split('.');
-
-                if (parts.length >= 2 && parts[parts.length - 1] === 'localhost') {
-                    const subdomain = parts[0];
-                    if (subdomain && !['www', 'api', 'admin'].includes(subdomain)) {
-                        this.logger.log('[TenantGuard] Resolving from subdomain (localhost): ' + subdomain);
-                        const p = await this.puskesmasRepo.findOne({ where: { slug: subdomain }, select: ['id'] });
-                        tenantId = p?.id || null;
-                    }
-                }
-            } else {
-                // Production: extract subdomain from hostname
-                const hostname = host.split(':')[0];
-                const parts = hostname.split('.');
-                if (parts.length > 2) {
-                    const subdomain = parts[0];
-                    if (subdomain && !['www', 'api', 'admin'].includes(subdomain)) {
-                        this.logger.log('[TenantGuard] Resolving from subdomain (production): ' + subdomain);
-                        const p = await this.puskesmasRepo.findOne({ where: { slug: subdomain }, select: ['id'] });
-                        tenantId = p?.id || null;
-                    }
-                }
-            }
-        }
-
-        // Fetch full puskesmas object
-        if (tenantId) {
-            return await this.puskesmasRepo.findOne({ where: { id: tenantId } });
-        }
-
-        return null;
     }
 }
