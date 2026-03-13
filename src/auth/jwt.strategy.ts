@@ -30,7 +30,14 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       throw new UnauthorizedException('Admin tidak ditemukan.');
     }
 
-    if (admin.current_token !== token) {
+    // Validate token version for session security
+    if (payload.tokenVersion !== admin.token_version) {
+      console.warn(`[JwtStrategy] Token version mismatch - session invalidation`);
+      throw new UnauthorizedException('Sesi berakhir karena akun ini telah login di perangkat lain.');
+    }
+
+    // Check if token is valid - simple comparison
+    if (admin.current_token && token && admin.current_token !== token) {
       console.warn(`[JwtStrategy] Token mismatch - session invalidation`);
       throw new UnauthorizedException('Sesi berakhir karena akun ini telah login di perangkat lain.');
     }
@@ -45,6 +52,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       role: admin.role,
       puskesmas_id: admin.puskesmas_id,
       active_tenant: payload.active_tenant,
+      tokenVersion: payload.tokenVersion,
     };
   }
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Res, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { Controller, Get, Param, Res, NotFoundException, ForbiddenException, Request } from '@nestjs/common';
 import type { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
 import { join } from 'path';
@@ -21,7 +21,7 @@ export class FilesController {
      * 
      * This ensures:
      * 1. File exists in tenant's storage
-     * 2. Tenant has access to this file
+     * 2. Tenant has access to this file (tenant isolation enforced)
      * 3. No path traversal attacks
      */
     @Get(':tenant/:module/:filename')
@@ -30,7 +30,20 @@ export class FilesController {
         @Param('module') module: string,
         @Param('filename') filename: string,
         @Res() res: Response,
+        @Request() req: any,
     ) {
+        // Get tenant context from request (set by TenantInterceptor)
+        const user = req.user;
+        const userTenantId = req.tenantId;
+        const userRole = user?.role;
+
+        // Validate tenant access
+        // SUPER_ADMIN can access any tenant
+        // OPERATOR can only access their own tenant
+        if (userRole !== 'SUPER_ADMIN' && userTenantId && userTenantId !== tenant) {
+            throw new ForbiddenException('Anda tidak berhak mengakses file dari tenant ini.');
+        }
+
         // Validate module is allowed
         const allowedModules = ['gallery', 'video', 'banner', 'document', 'pages', 'static-pages', 'web-info', 'profile'];
         if (!allowedModules.includes(module)) {
@@ -60,7 +73,7 @@ export class FilesController {
         });
 
         const fileStream = createReadStream(filePath);
-        fileStream.pipe(res);
+        fileStream.pipe(res as any);
     }
 
     /**

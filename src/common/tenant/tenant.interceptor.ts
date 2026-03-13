@@ -1,7 +1,6 @@
 import { Injectable, NestInterceptor, ExecutionContext, CallHandler, Logger } from '@nestjs/common';
 import { Observable } from 'rxjs';
 import { TenantContextService } from './tenant-context.service';
-import { TenantGuard } from './tenant.guard';
 import { AdminRole } from '../../admins/entity/admin.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -24,7 +23,6 @@ export class TenantInterceptor implements NestInterceptor {
         private readonly tenantContextService: TenantContextService,
         @InjectRepository(Puskesmas)
         private readonly puskesmasRepo: Repository<Puskesmas>,
-        private readonly tenantGuard: TenantGuard
     ) { }
 
     async intercept(context: ExecutionContext, next: CallHandler): Promise<Observable<any>> {
@@ -125,9 +123,6 @@ export class TenantInterceptor implements NestInterceptor {
         this.tenantContextService.updateContext({
             tenantId, userId, role, isSuperAdmin
         });
-
-        // Perform status check using TenantGuard
-        await this.tenantGuard.canActivate(context);
 
         this.logger.log('[TenantInterceptor] Tenant: ' + (tenantId || 'none') + ' | Role: ' + role + ' | Public: ' + isPublicRoute + ' | Path: ' + path);
 

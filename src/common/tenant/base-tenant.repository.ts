@@ -75,7 +75,19 @@ export class BaseTenantRepository<T extends ObjectLiteral> {
                 }
                 this.logger.debug(`[BaseTenantRepo] Applied tenant filter: puskesmas_id = ${tenantId}`);
             } else {
-                this.logger.warn(`[BaseTenantRepo] No tenantId - query will NOT be filtered!`);
+                // No tenantId and not super admin - this is a security issue!
+                const isSuperAdmin = this.tenantContextService.isSuperAdmin();
+                if (!isSuperAdmin) {
+                    this.logger.error(`[BaseTenantRepo] SECURITY: No tenantId for non-super-admin - query will return empty`);
+                    // Return query that will return empty results
+                    if (alias) {
+                        qb.andWhere('1 = 0'); // Always false condition
+                    } else {
+                        qb.andWhere('1 = 0');
+                    }
+                } else {
+                    this.logger.warn(`[BaseTenantRepo] Super Admin accessing all data`);
+                }
             }
         } catch (e) {
             this.logger.warn(`[BaseTenantRepo] Exception in createQueryBuilder: ${e.message} - allowing public access (no filter)`);

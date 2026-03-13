@@ -4,4 +4,5 @@ export interface JwtPayload {
     role: string;
     puskesmas_id?: string | null;  // For OPERATOR - their assigned puskesmas
     active_tenant?: string;        // For SUPER_ADMIN - currently selected tenant
+    tokenVersion?: number;         // For session validation
 }

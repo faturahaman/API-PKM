@@ -1,5 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { existsSync, mkdirSync, unlinkSync, readdirSync, statSync } from 'fs';
+import { existsSync, mkdirSync, unlinkSync, readdirSync, statSync, readFileSync, writeFileSync } from 'fs';
 import { join, extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -165,9 +165,20 @@ export class StorageService {
         const modulePath = this.getModulePath(tenantId, module);
         const filePath = join(modulePath, filename);
 
-        // Write file (synchronous for multer compatibility)
-        // Note: In production, consider using async file operations
-        require('fs').writeFileSync(filePath, file.buffer);
+        // Write file to storage
+        // Handle both memory storage (file.buffer) and disk storage (file.path)
+        let fileData: Buffer;
+        if (file.buffer) {
+            // Memory storage - use buffer directly
+            fileData = file.buffer;
+        } else if (file.path) {
+            // Disk storage - read from temporary path
+            fileData = readFileSync(file.path);
+        } else {
+            throw new BadRequestException('Data file tidak ditemukan!');
+        }
+
+        writeFileSync(filePath, fileData);
 
         // Return relative path and URL
         const relativePath = `${tenantId}/${module}/${filename}`;

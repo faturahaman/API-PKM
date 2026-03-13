@@ -9,17 +9,23 @@ import { GalleryService } from './gallery.service';
 import { CreateGalleryDto } from 'src/gallery/dto/create-gallery.dto';
 import { createMulterOptions } from 'src/common/multer.utils';
 import { extractRequestMeta } from 'src/common/dto/request-meta.dto';
+import { AdminRole } from 'src/admins/entity/admin.entity';
 
 @UseGuards(AuthGuard('jwt')) // Semua endpoint di class ini butuh Token
 @Controller('admin/gallery') // Endpoint: /api/v1/admin/gallery
 export class GalleryAdminController {
-    constructor(private readonly galleryService: GalleryService) { }
+    constructor(
+        private readonly galleryService: GalleryService
+    ) { }
 
     @Post()
     @UseInterceptors(FileInterceptor('image', createMulterOptions('gallery')))
-    create(@Request() req: any, @UploadedFile() file: Express.Multer.File, @Body() createGalleryDto: CreateGalleryDto) {
+    async create(@Request() req: any, @UploadedFile() file: Express.Multer.File, @Body() createGalleryDto: CreateGalleryDto) {
         if (!file) throw new BadRequestException('File gambar wajib diupload!');
+
+        // Simpan path file langsung dari multer (sudah di public/uploads/gallery/)
         const imagePath = `/uploads/gallery/${file.filename}`;
+
         return this.galleryService.create(createGalleryDto, imagePath, extractRequestMeta(req));
     }
 

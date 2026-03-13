@@ -31,6 +31,10 @@ export class Admin {
     @Column({ nullable: true, type: 'text' })
     current_token: string;
 
+    // Token version for session invalidation
+    @Column({ default: 1 })
+    token_version: number;
+
     // For OPERATOR role - the puskesmas they manage
     @Column({ type: 'uuid', nullable: true })
     puskesmas_id: string;

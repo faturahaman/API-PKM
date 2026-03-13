@@ -59,6 +59,7 @@ export class AuthService {
             name: admin.name,
             role: admin.role,
             puskesmas_id: admin.puskesmas_id,
+            tokenVersion: admin.token_version,
         };
 
         if (admin.role === AdminRole.SUPER_ADMIN) {
@@ -137,6 +138,7 @@ export class AuthService {
                 role: user.role,
                 puskesmas_id: user.puskesmas_id,
                 active_tenant: undefined, // Clear active tenant for global view
+                tokenVersion: user.tokenVersion,
             };
 
             const token = await this.jwtService.signAsync(payload);
@@ -196,6 +198,7 @@ export class AuthService {
             role: user.role,
             puskesmas_id: user.puskesmas_id,
             active_tenant: switchTenantDto.tenant_id,
+            tokenVersion: user.tokenVersion,
         };
 
         const token = await this.jwtService.signAsync(payload);

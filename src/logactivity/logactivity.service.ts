@@ -231,6 +231,19 @@ export class LogactivityService implements OnModuleInit {
      * Find logs by entity ID
      */
     async findByEntity(entityId: string): Promise<LogActivity[]> {
+        const tenantId = this.tenantContextService.getTenantId();
+        const isSuperAdmin = this.tenantContextService.isSuperAdmin();
+
+        // If not super admin, filter by tenant
+        if (!isSuperAdmin && tenantId) {
+            return this.logActivityRepository.find({
+                where: { entity_id: entityId, puskesmas_id: tenantId },
+                order: { created_at: 'DESC' },
+                take: 50,
+            });
+        }
+
+        // Super admin can see all logs for the entity
         return this.logActivityRepository.find({
             where: { entity_id: entityId },
             order: { created_at: 'DESC' },
@@ -242,6 +255,19 @@ export class LogactivityService implements OnModuleInit {
      * Find logs by admin ID
      */
     async findByAdmin(adminId: string, limit: number = 100): Promise<LogActivity[]> {
+        const tenantId = this.tenantContextService.getTenantId();
+        const isSuperAdmin = this.tenantContextService.isSuperAdmin();
+
+        // If not super admin, filter by tenant
+        if (!isSuperAdmin && tenantId) {
+            return this.logActivityRepository.find({
+                where: { admin_id: adminId, puskesmas_id: tenantId },
+                order: { created_at: 'DESC' },
+                take: Math.min(limit, 100),
+            });
+        }
+
+        // Super admin can see all logs for the admin
         return this.logActivityRepository.find({
             where: { admin_id: adminId },
             order: { created_at: 'DESC' },
@@ -295,6 +321,19 @@ export class LogactivityService implements OnModuleInit {
      * Legacy method - kept for backward compatibility
      */
     async findByAdminLegacy(adminId: string): Promise<LogActivity[]> {
+        const tenantId = this.tenantContextService.getTenantId();
+        const isSuperAdmin = this.tenantContextService.isSuperAdmin();
+
+        // If not super admin, filter by tenant
+        if (!isSuperAdmin && tenantId) {
+            return this.logActivityRepository.find({
+                where: { admin_id: adminId, puskesmas_id: tenantId },
+                order: { created_at: 'DESC' },
+                take: 100,
+            });
+        }
+
+        // Super admin can see all logs
         return this.logActivityRepository.find({
             where: { admin_id: adminId },
             order: { created_at: 'DESC' },

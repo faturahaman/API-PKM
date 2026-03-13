@@ -21,6 +21,10 @@ import { Puskesmas } from '../../puskesmas/entity/puskesmas.entity';
             provide: APP_INTERCEPTOR,
             useExisting: TenantInterceptor,
         },
+        {
+            provide: APP_GUARD,
+            useClass: TenantGuard,
+        },
     ],
     exports: [
         TenantContextService,
