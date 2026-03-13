@@ -1,10 +1,11 @@
 import {
-  Controller, Get, Post, Body, Param, Delete, Patch, Query, UseGuards
+  Controller, Get, Post, Body, Param, Delete, Patch, Query, UseGuards, Request
 } from '@nestjs/common';
 import { AgendaService } from './agenda.service';
 import { CreateAgendaDto } from './dto/create-agenda.dto';
 import { UpdateAgendaDto } from './dto/update-agenda.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { extractRequestMeta } from '../common/dto/request-meta.dto';
 
 @UseGuards(AuthGuard('jwt'))
 @Controller('admin/agenda')
@@ -12,8 +13,8 @@ export class AgendaAdminController {
   constructor(private readonly agendaService: AgendaService) { }
 
   @Post()
-  create(@Body() createAgendaDto: CreateAgendaDto) {
-    return this.agendaService.create(createAgendaDto);
+  create(@Request() req: any, @Body() createAgendaDto: CreateAgendaDto) {
+    return this.agendaService.create(createAgendaDto, extractRequestMeta(req));
   }
 
   @Get()
@@ -32,12 +33,12 @@ export class AgendaAdminController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateData: UpdateAgendaDto) {
-    return this.agendaService.update(id, updateData);
+  update(@Request() req: any, @Param('id') id: string, @Body() updateData: UpdateAgendaDto) {
+    return this.agendaService.update(id, updateData, extractRequestMeta(req));
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.agendaService.remove(id);
+  remove(@Request() req: any, @Param('id') id: string) {
+    return this.agendaService.remove(id, extractRequestMeta(req));
   }
 }

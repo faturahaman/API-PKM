@@ -1,9 +1,10 @@
 import {
-  Controller, Post, Body, Get, Param, Delete, UseGuards, NotFoundException, Query, Patch
+  Controller, Post, Body, Get, Param, Delete, UseGuards, NotFoundException, Query, Patch, Request
 } from '@nestjs/common';
 import { AlbumService } from './album.service';
 import { CreateAlbumDto } from './dto/create-album.dto';
 import { AuthGuard } from '@nestjs/passport';
+import { extractRequestMeta } from '../common/dto/request-meta.dto';
 
 @UseGuards(AuthGuard('jwt')) // Guard level clas  
 @Controller('admin/album')   // Endpoint: /api/v1/admin/album
@@ -11,8 +12,8 @@ export class AlbumAdminController {
   constructor(private readonly albumService: AlbumService) { }
 
   @Post()
-  create(@Body() createAlbumDto: CreateAlbumDto) {
-    return this.albumService.create(createAlbumDto);
+  create(@Request() req: any, @Body() createAlbumDto: CreateAlbumDto) {
+    return this.albumService.create(createAlbumDto, extractRequestMeta(req));
   }
 
   @Get()
@@ -36,13 +37,12 @@ export class AlbumAdminController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateData: any) {
-    // Idealnya ganti 'any' dengan UpdateAlbumDto
-    return this.albumService.update(id, updateData);
+  update(@Request() req: any, @Param('id') id: string, @Body() updateData: any) {
+    return this.albumService.update(id, updateData, extractRequestMeta(req));
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.albumService.remove(id);
+  remove(@Request() req: any, @Param('id') id: string) {
+    return this.albumService.remove(id, extractRequestMeta(req));
   }
 }

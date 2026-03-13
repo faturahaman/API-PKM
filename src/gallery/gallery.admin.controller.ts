@@ -1,13 +1,14 @@
 import {
     Controller, Get, Post, Body, Param, Query,
     UseInterceptors, UploadedFile, BadRequestException,
-    UseGuards, Delete, Patch
+    UseGuards, Delete, Patch, Request
 } from '@nestjs/common';
 import { AuthGuard } from '@nestjs/passport';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { GalleryService } from './gallery.service';
 import { CreateGalleryDto } from 'src/gallery/dto/create-gallery.dto';
 import { createMulterOptions } from 'src/common/multer.utils';
+import { extractRequestMeta } from 'src/common/dto/request-meta.dto';
 
 @UseGuards(AuthGuard('jwt')) // Semua endpoint di class ini butuh Token
 @Controller('admin/gallery') // Endpoint: /api/v1/admin/gallery
@@ -16,10 +17,10 @@ export class GalleryAdminController {
 
     @Post()
     @UseInterceptors(FileInterceptor('image', createMulterOptions('gallery')))
-    create(@UploadedFile() file: Express.Multer.File, @Body() createGalleryDto: CreateGalleryDto) {
+    create(@Request() req: any, @UploadedFile() file: Express.Multer.File, @Body() createGalleryDto: CreateGalleryDto) {
         if (!file) throw new BadRequestException('File gambar wajib diupload!');
         const imagePath = `/uploads/gallery/${file.filename}`;
-        return this.galleryService.create(createGalleryDto, imagePath);
+        return this.galleryService.create(createGalleryDto, imagePath, extractRequestMeta(req));
     }
 
     // Admin juga butuh liat list gallery untuk manajemen
@@ -38,8 +39,8 @@ export class GalleryAdminController {
     }
 
     @Delete(':id')
-    remove(@Param('id') id: string) {
-        return this.galleryService.remove(id);
+    remove(@Request() req: any, @Param('id') id: string) {
+        return this.galleryService.remove(id, extractRequestMeta(req));
     }
 
     // Update foto masuk ke album mana

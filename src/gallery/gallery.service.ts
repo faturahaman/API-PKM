@@ -9,6 +9,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 @Injectable()
 export class GalleryService {
@@ -28,7 +29,7 @@ export class GalleryService {
     this.albumRepository = new BaseTenantRepository(albumRepositoryNative, tenantContextService);
   }
 
-  async create(createGalleryDto: CreateGalleryDto, imagePath: string) {
+  async create(createGalleryDto: CreateGalleryDto, imagePath: string, requestMeta?: RequestMetaDto) {
     const newGallery = this.galleryRepository.create({
       ...createGalleryDto,
       image: imagePath,
@@ -42,6 +43,10 @@ export class GalleryService {
         action: LogActivityAction.CREATE,
         module: 'GALLERY',
         entity_id: savedGallery.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_after: {
           title: savedGallery.image_title,
           image: savedGallery.image,
@@ -85,7 +90,7 @@ export class GalleryService {
     return this.galleryRepository.findOne({ where: { id } });
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestMeta?: RequestMetaDto) {
     const galleryToDelete = await this.galleryRepository.findOne({ where: { id } });
 
     if (!galleryToDelete) {
@@ -112,6 +117,10 @@ export class GalleryService {
         action: LogActivityAction.DELETE,
         module: 'GALLERY',
         entity_id: id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: deletedData,
       });
     } catch (error) {

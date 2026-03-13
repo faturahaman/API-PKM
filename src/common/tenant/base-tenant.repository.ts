@@ -87,45 +87,55 @@ export class BaseTenantRepository<T extends ObjectLiteral> {
     }
 
     async find(options?: FindManyOptions<T>): Promise<T[]> {
-        // For public queries, try to get tenant, but don't fail if no context
-        try {
-            return this.repository.find(this.applyTenantFilter(options, true));
-        } catch (e) {
-            // If tenant filtering fails (no context), return all data for public routes
-            return this.repository.find(options);
+        const context = this.tenantContextService.getTenantContext();
+        const tenantId = this.getTenantIdOrThrow(true);
+
+        if (!tenantId && !context?.isSuperAdmin) {
+            this.logger.warn('[BaseTenantRepo] No tenant context - returning empty array for safety');
+            return [];
         }
+        return this.repository.find(this.applyTenantFilter(options, true));
     }
 
     async findAndCount(options?: FindManyOptions<T>): Promise<[T[], number]> {
-        try {
-            return this.repository.findAndCount(this.applyTenantFilter(options, true));
-        } catch (e) {
-            return this.repository.findAndCount(options);
+        const context = this.tenantContextService.getTenantContext();
+        const tenantId = this.getTenantIdOrThrow(true);
+
+        if (!tenantId && !context?.isSuperAdmin) {
+            this.logger.warn('[BaseTenantRepo] No tenant context - returning empty data for safety');
+            return [[], 0];
         }
+        return this.repository.findAndCount(this.applyTenantFilter(options, true));
     }
 
     async findOne(options: FindOneOptions<T>): Promise<T | null> {
-        try {
-            return this.repository.findOne(this.applyTenantFilter(options, true));
-        } catch (e) {
-            return this.repository.findOne(options);
+        const context = this.tenantContextService.getTenantContext();
+        const tenantId = this.getTenantIdOrThrow(true);
+
+        if (!tenantId && !context?.isSuperAdmin) {
+            return null;
         }
+        return this.repository.findOne(this.applyTenantFilter(options, true));
     }
 
     async findOneBy(where: FindOptionsWhere<T> | FindOptionsWhere<T>[]): Promise<T | null> {
-        try {
-            return this.repository.findOneBy(this.applyTenantWhere(where, true));
-        } catch (e) {
-            return this.repository.findOneBy(where);
+        const context = this.tenantContextService.getTenantContext();
+        const tenantId = this.getTenantIdOrThrow(true);
+
+        if (!tenantId && !context?.isSuperAdmin) {
+            return null;
         }
+        return this.repository.findOneBy(this.applyTenantWhere(where, true));
     }
 
     async count(options?: FindManyOptions<T>): Promise<number> {
-        try {
-            return this.repository.count(this.applyTenantFilter(options, true));
-        } catch (e) {
-            return this.repository.count(options);
+        const context = this.tenantContextService.getTenantContext();
+        const tenantId = this.getTenantIdOrThrow(true);
+
+        if (!tenantId && !context?.isSuperAdmin) {
+            return 0;
         }
+        return this.repository.count(this.applyTenantFilter(options, true));
     }
 
     create(entityLike: DeepPartial<T>): T {

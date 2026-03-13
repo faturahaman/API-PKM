@@ -10,6 +10,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 @Injectable()
 export class PagesService {
@@ -29,7 +30,7 @@ export class PagesService {
         this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
     }
 
-    async create(createPageDto: CreatePageDto, image?: Express.Multer.File, document?: Express.Multer.File) {
+    async create(createPageDto: CreatePageDto, image?: Express.Multer.File, document?: Express.Multer.File, requestMeta?: RequestMetaDto) {
         if (!createPageDto.title || createPageDto.title.trim() === '') {
             throw new BadRequestException('Judul halaman wajib diisi');
         }
@@ -76,6 +77,10 @@ export class PagesService {
                 action: LogActivityAction.CREATE,
                 module: 'PAGES',
                 entity_id: savedPage.id,
+                ip_address: requestMeta?.ip_address,
+                user_agent: requestMeta?.user_agent,
+                route: requestMeta?.route,
+                method: requestMeta?.method,
                 payload_after: {
                     title: savedPage.title,
                     type: savedPage.type,
@@ -207,7 +212,7 @@ export class PagesService {
         });
     }
 
-    async update(id: string, updatePageDto: UpdatePageDto, image?: Express.Multer.File, document?: Express.Multer.File) {
+    async update(id: string, updatePageDto: UpdatePageDto, image?: Express.Multer.File, document?: Express.Multer.File, requestMeta?: RequestMetaDto) {
         const pageData = await this.pageRepository.findOne({
             where: { id },
             relations: ['menu'],
@@ -264,6 +269,10 @@ export class PagesService {
                 action: LogActivityAction.UPDATE,
                 module: 'PAGES',
                 entity_id: savedPage.id,
+                ip_address: requestMeta?.ip_address,
+                user_agent: requestMeta?.user_agent,
+                route: requestMeta?.route,
+                method: requestMeta?.method,
                 payload_after: {
                     title: savedPage.title,
                     type: savedPage.type,
@@ -276,7 +285,7 @@ export class PagesService {
         return savedPage;
     }
 
-    async remove(id: string) {
+    async remove(id: string, requestMeta?: RequestMetaDto) {
         const pageToDelete = await this.pageRepository.findOneBy({ id });
         if (!pageToDelete) throw new NotFoundException('Halaman tidak ditemukan');
 
@@ -293,6 +302,10 @@ export class PagesService {
                 action: LogActivityAction.DELETE,
                 module: 'PAGES',
                 entity_id: id,
+                ip_address: requestMeta?.ip_address,
+                user_agent: requestMeta?.user_agent,
+                route: requestMeta?.route,
+                method: requestMeta?.method,
                 payload_before: deletedData,
             });
         } catch (error) {

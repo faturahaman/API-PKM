@@ -8,6 +8,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 @Injectable()
 export class VideoService {
@@ -23,7 +24,7 @@ export class VideoService {
     this.videoRepository = new BaseTenantRepository(videoRepositoryNative, tenantContextService);
   }
 
-  async create(createVideoDto: CreateVideoDto, file?: Express.Multer.File) {
+  async create(createVideoDto: CreateVideoDto, file?: Express.Multer.File, requestMeta?: RequestMetaDto) {
     const { is_embed, ...videoData } = createVideoDto;
 
     // Konversi is_embed ke boolean
@@ -72,6 +73,10 @@ export class VideoService {
         action: LogActivityAction.CREATE,
         module: 'VIDEO',
         entity_id: savedVideo.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_after: {
           title: savedVideo.video_title,
           is_embed: savedVideo.is_embed,
@@ -102,7 +107,7 @@ export class VideoService {
     };
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestMeta?: RequestMetaDto) {
     const video = await this.videoRepository.findOne({ where: { id } });
     if (!video) {
       throw new NotFoundException('Video tidak ditemukan');
@@ -122,6 +127,10 @@ export class VideoService {
         action: LogActivityAction.DELETE,
         module: 'VIDEO',
         entity_id: id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: deletedData,
       });
     } catch (error) {

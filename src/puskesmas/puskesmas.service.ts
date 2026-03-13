@@ -210,7 +210,7 @@ export class PuskesmasService implements OnModuleInit {
         // Log activity
         try {
             await this.logactivityService.log({
-                action: 'ACTIVATE_TENANT' as any,
+                action: LogActivityAction.ACTIVATE_TENANT,
                 module: 'PUSKESMAS',
                 entity_id: id,
                 payload_before: { status: previousStatus },
@@ -245,7 +245,7 @@ export class PuskesmasService implements OnModuleInit {
         // Log activity
         try {
             await this.logactivityService.log({
-                action: 'INACTIVATE_TENANT' as any,
+                action: LogActivityAction.INACTIVATE_TENANT,
                 module: 'PUSKESMAS',
                 entity_id: id,
                 payload_before: { status: previousStatus },
@@ -282,7 +282,7 @@ export class PuskesmasService implements OnModuleInit {
         // Log activity
         try {
             await this.logactivityService.log({
-                action: 'SUSPEND_TENANT' as any,
+                action: LogActivityAction.SUSPEND_TENANT,
                 module: 'PUSKESMAS',
                 entity_id: id,
                 payload_before: { status: previousStatus },

@@ -9,6 +9,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 /**
  * Activity Log Decorator for Banner Service
@@ -34,7 +35,7 @@ export class BannerService {
   }
 
   // TERIMA FILE DISINI
-  async create(createBannerDto: CreateBannerDto, file: Express.Multer.File): Promise<Banner> {
+  async create(createBannerDto: CreateBannerDto, file: Express.Multer.File, requestMeta?: RequestMetaDto): Promise<Banner> {
     const newBanner = this.bannerRepository.create({
       ...createBannerDto,
       image_path: `/uploads/banner/${file.filename}`, // Simpan path otomatis
@@ -49,6 +50,10 @@ export class BannerService {
         action: LogActivityAction.CREATE,
         module: 'BANNER',
         entity_id: savedBanner.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_after: {
           title: savedBanner.title,
           image_path: savedBanner.image_path,
@@ -89,7 +94,7 @@ export class BannerService {
   }
 
   // UPDATE HANDLE GAMBAR BARU (JIKA ADA)
-  async update(id: string, updateBannerDto: UpdateBannerDto, file?: Express.Multer.File): Promise<Banner> {
+  async update(id: string, updateBannerDto: UpdateBannerDto, file?: Express.Multer.File, requestMeta?: RequestMetaDto): Promise<Banner> {
     // Get current banner for before state
     const currentBanner = await this.findOne(id);
 
@@ -111,6 +116,10 @@ export class BannerService {
         action: LogActivityAction.UPDATE,
         module: 'BANNER',
         entity_id: id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: {
           title: currentBanner.title,
           is_publish: currentBanner.is_publish,
@@ -134,7 +143,7 @@ export class BannerService {
     return this.bannerRepository.save(banner);
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestMeta?: RequestMetaDto) {
     const banner = await this.findOne(id);
     const deletedBanner = { ...banner };
     banner.is_deleted = 1;
@@ -146,6 +155,10 @@ export class BannerService {
         action: LogActivityAction.DELETE,
         module: 'BANNER',
         entity_id: id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: {
           title: deletedBanner.title,
           is_publish: deletedBanner.is_publish,

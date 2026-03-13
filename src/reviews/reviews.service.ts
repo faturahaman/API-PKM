@@ -10,6 +10,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 @Injectable()
 export class ReviewsService {
@@ -60,7 +61,7 @@ export class ReviewsService {
   }
 
   // Update Status Only (Publish/Unpublish)
-  async updateStatus(id: string, updateDto: UpdateReviewDto) {
+  async updateStatus(id: string, updateDto: UpdateReviewDto, requestMeta?: RequestMetaDto) {
     const review = await this.reviewRepository.findOne({ where: { id } });
 
     if (!review) {
@@ -81,6 +82,10 @@ export class ReviewsService {
         action: LogActivityAction.UPDATE,
         module: 'REVIEWS',
         entity_id: savedReview.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: { is_publish: beforeStatus },
         payload_after: { is_publish: savedReview.is_publish },
       });

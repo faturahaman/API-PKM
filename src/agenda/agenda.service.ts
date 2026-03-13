@@ -9,6 +9,7 @@ import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
+import { RequestMetaDto } from '../common/dto/request-meta.dto';
 
 @Injectable()
 export class AgendaService {
@@ -24,7 +25,7 @@ export class AgendaService {
     this.agendaRepository = new BaseTenantRepository(agendaRepositoryNative, tenantContextService);
   }
 
-  async create(createAgendaDto: CreateAgendaDto) {
+  async create(createAgendaDto: CreateAgendaDto, requestMeta?: RequestMetaDto) {
     const newAgenda = this.agendaRepository.create({
       ...createAgendaDto,
       is_deleted: false,
@@ -37,6 +38,10 @@ export class AgendaService {
         action: LogActivityAction.CREATE,
         module: 'AGENDA',
         entity_id: savedAgenda.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_after: {
           title: savedAgenda.title,
           date: savedAgenda.date,
@@ -76,7 +81,7 @@ export class AgendaService {
     return agenda;
   }
 
-  async update(id: string, updateData: UpdateAgendaDto) {
+  async update(id: string, updateData: UpdateAgendaDto, requestMeta?: RequestMetaDto) {
     const oldAgenda = await this.findOne(id);
     const beforeData = {
       activity_name: oldAgenda.activity_name,
@@ -93,6 +98,10 @@ export class AgendaService {
         action: LogActivityAction.UPDATE,
         module: 'AGENDA',
         entity_id: savedAgenda.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: beforeData,
         payload_after: {
           activity_name: savedAgenda.activity_name,
@@ -107,7 +116,7 @@ export class AgendaService {
     return savedAgenda;
   }
 
-  async remove(id: string) {
+  async remove(id: string, requestMeta?: RequestMetaDto) {
     const agenda = await this.findOne(id);
     const deletedData = {
       activity_name: agenda.activity_name,
@@ -123,6 +132,10 @@ export class AgendaService {
         action: LogActivityAction.DELETE,
         module: 'AGENDA',
         entity_id: savedAgenda.id,
+        ip_address: requestMeta?.ip_address,
+        user_agent: requestMeta?.user_agent,
+        route: requestMeta?.route,
+        method: requestMeta?.method,
         payload_before: deletedData,
       });
     } catch (error) {
