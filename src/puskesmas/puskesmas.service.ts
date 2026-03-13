@@ -39,8 +39,21 @@ export class PuskesmasService implements OnModuleInit {
         }
     }
 
-    async findAll(): Promise<Puskesmas[]> {
-        return this.puskesmasRepository.find();
+    async findAll(page: number = 1, limit: number = 10) {
+        const skip = (page - 1) * limit;
+        const [data, total] = await this.puskesmasRepository.findAndCount({
+            skip,
+            take: limit,
+            order: { name: 'ASC' },
+        });
+
+        return {
+            docs: data,
+            totalDocs: total,
+            limit,
+            page,
+            totalPages: Math.ceil(total / limit),
+        };
     }
 
     async findOne(id: string): Promise<Puskesmas | null> {

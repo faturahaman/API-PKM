@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { PuskesmasService } from './puskesmas.service';
 import { PuskesmasController } from './puskesmas.controller';
+import { PuskesmasPublicController } from './puskesmas.public.controller';
 import { Puskesmas } from './entity/puskesmas.entity';
 import { LogactivityModule } from '../logactivity/logactivity.module';
 
@@ -10,7 +11,7 @@ import { LogactivityModule } from '../logactivity/logactivity.module';
     TypeOrmModule.forFeature([Puskesmas]),
     LogactivityModule,
   ],
-  controllers: [PuskesmasController],
+  controllers: [PuskesmasController, PuskesmasPublicController],
   providers: [PuskesmasService],
   exports: [PuskesmasService],
 })
