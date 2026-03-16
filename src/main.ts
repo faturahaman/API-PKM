@@ -44,7 +44,9 @@ async function bootstrap() {
     defaultVersion: '1',
   });
 
-  app.use(helmet());
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" }
+  }));
 
   app.useGlobalPipes(new ValidationPipe({
     transform: true,
