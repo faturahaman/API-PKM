@@ -11,4 +11,16 @@ export class CreatePuskesmasDto {
     @IsEnum(PuskesmasStatus)
     @IsOptional()
     status?: PuskesmasStatus;
+
+    @IsString()
+    @IsOptional()
+    suspended_reason?: string;
+
+    @IsString()
+    @IsOptional()
+    maintenance_message?: string;
+
+    @IsString()
+    @IsOptional()
+    deactivated_reason?: string;
 }
