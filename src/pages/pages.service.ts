@@ -5,6 +5,7 @@ import { Page } from './entity/page.entity';
 import { Menu } from '../menus/entity/menu.entity';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
+import { StaticPage } from '../static-pages/entity/static-page.entity';
 
 import { TenantContextService } from '../common/tenant/tenant-context.service';
 import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
@@ -17,16 +18,20 @@ export class PagesService {
     private readonly logger = new Logger(PagesService.name);
     private pageRepository: BaseTenantRepository<Page>;
     private menuRepository: BaseTenantRepository<Menu>;
+    private staticPageRepository: BaseTenantRepository<StaticPage>;
 
     constructor(
         @InjectRepository(Page)
         pageRepositoryNative: Repository<Page>,
+        @InjectRepository(StaticPage)
+        staticPageRepositoryNative: Repository<StaticPage>,
         @InjectRepository(Menu)
         menuRepositoryNative: Repository<Menu>,
         private readonly tenantContextService: TenantContextService,
         private readonly logactivityService: LogactivityService,
     ) {
         this.pageRepository = new BaseTenantRepository(pageRepositoryNative, tenantContextService);
+        this.staticPageRepository = new BaseTenantRepository(staticPageRepositoryNative, tenantContextService);
         this.menuRepository = new BaseTenantRepository(menuRepositoryNative, tenantContextService);
     }
 
@@ -161,6 +166,98 @@ export class PagesService {
         }
 
         return query.getMany();
+    }
+
+    async search(q: string) {
+        if (!q || q.trim() === '') return [];
+
+        const tenantId = this.tenantContextService.getTenantId();
+        this.logger.debug(`[PagesService] Search query: "${q}" | Tenant ID: ${tenantId}`);
+
+        // 1. Search Dynamic Pages
+        const dynamicQuery = this.pageRepository.createQueryBuilder('page');
+        dynamicQuery.leftJoinAndSelect('page.menu', 'menu');
+        dynamicQuery.leftJoinAndSelect('menu.parent', 'parent');
+        
+        // PENTING: Gunakan andWhere agar tidak menimpa filter tenant otomatis dari BaseTenantRepository
+        dynamicQuery.andWhere('page.status = :status', { status: 1 });
+        dynamicQuery.andWhere('page.title LIKE :q', { q: `%${q}%` });
+        
+        // Double safety for tenant filter
+        if (tenantId) {
+            dynamicQuery.andWhere('page.puskesmas_id = :tid', { tid: tenantId });
+        }
+
+        dynamicQuery.orderBy('page.createdAt', 'DESC');
+        dynamicQuery.take(10);
+        const dynamicPages = await dynamicQuery.getMany();
+
+        // 2. Search Static Pages
+        const staticQuery = this.staticPageRepository.createQueryBuilder('static');
+        staticQuery.leftJoinAndSelect('static.menu', 'menu');
+        staticQuery.leftJoinAndSelect('menu.parent', 'parent');
+        
+        // PENTING: Gunakan andWhere agar tidak menimpa filter tenant otomatis dari BaseTenantRepository
+        staticQuery.andWhere('static.title LIKE :q', { q: `%${q}%` });
+        
+        // Double safety for tenant filter
+        if (tenantId) {
+            staticQuery.andWhere('static.puskesmas_id = :tid', { tid: tenantId });
+        }
+
+        staticQuery.take(10);
+        const staticPages = await staticQuery.getMany();
+
+        // Format Dynamic Results
+        const dynamicResults = dynamicPages.map(page => {
+            let category = 'Lainnya';
+            const menuTitle = page.menu?.title?.toLowerCase() || '';
+            const parentTitle = page.menu?.parent?.title?.toLowerCase() || '';
+            const menuSlug = page.menu?.slug?.toLowerCase() || '';
+            const parentSlug = page.menu?.parent?.slug?.toLowerCase() || '';
+
+            if (menuTitle.includes('berita') || parentTitle.includes('berita') || menuSlug.includes('berita')) {
+                category = 'Berita';
+            } else if (menuTitle.includes('pelayanan') || parentTitle.includes('pelayanan') || menuSlug === 'pelayanan' || parentSlug === 'pelayanan') {
+                category = 'Pelayanan';
+            }
+
+            return {
+                id: page.id,
+                title: page.title,
+                category,
+                type: page.type,
+                menu_slug: page.menu?.slug,
+                is_static: false
+            };
+        });
+
+        // Format Static Results
+        const staticResults = staticPages.map(page => {
+            let category = 'Informasi';
+            const menuTitle = page.menu?.title?.toLowerCase() || '';
+            const parentTitle = page.menu?.parent?.title?.toLowerCase() || '';
+            const menuSlug = page.menu?.slug?.toLowerCase() || '';
+            const parentSlug = page.menu?.parent?.slug?.toLowerCase() || '';
+
+            if (menuTitle.includes('pelayanan') || parentTitle.includes('pelayanan') || menuSlug === 'pelayanan' || parentSlug === 'pelayanan') {
+                category = 'Pelayanan';
+            } else if (menuTitle.includes('profil') || parentTitle.includes('profil') || menuSlug === 'profil') {
+                category = 'Profil';
+            }
+
+            return {
+                id: page.id,
+                title: page.title,
+                category,
+                type: 'static',
+                menu_slug: page.menu?.slug,
+                is_static: true
+            };
+        });
+
+        // Merge and take top 15 total
+        return [...dynamicResults, ...staticResults].slice(0, 15);
     }
 
     async findOne(id: string) {

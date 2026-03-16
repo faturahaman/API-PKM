@@ -4,12 +4,13 @@ import { PagesService } from './pages.service';
 import { PagesAdminController } from './pages.admin.controller';
 import { PagesPublicController } from './pages.public.controller';
 import { Page } from './entity/page.entity';
+import { StaticPage } from '../static-pages/entity/static-page.entity';
 import { Menu } from '../menus/entity/menu.entity';
 import { LogactivityModule } from '../logactivity/logactivity.module';
 
 @Module({
     imports: [
-        TypeOrmModule.forFeature([Page, Menu]),
+        TypeOrmModule.forFeature([Page, StaticPage, Menu]),
         LogactivityModule,
     ],
     controllers: [PagesAdminController, PagesPublicController],

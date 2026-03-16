@@ -10,6 +10,11 @@ export class PagesPublicController {
         return this.pagesService.findPublished();
     }
 
+    @Get('search')
+    search(@Query('q') q: string) {
+        return this.pagesService.search(q);
+    }
+
     @Get('pelayanan')
     findPelayanan() {
         return this.pagesService.findPelayanan();

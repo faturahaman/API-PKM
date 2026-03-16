@@ -62,7 +62,7 @@ export class ConsultationService {
     const skip = (page - 1) * limit;
 
     const [data, total] = await this.consultationRepo.findAndCount({
-      where: { is_publish: true },
+      where: { is_publish: true, is_answer: true },
       order: { created_at: 'DESC' },
       skip,
       take: limit,
