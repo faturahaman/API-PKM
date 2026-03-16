@@ -56,6 +56,15 @@ export class PuskesmasController {
     if (updatePuskesmasDto.status !== undefined && updatePuskesmasDto.status !== '') {
       cleanData.status = updatePuskesmasDto.status;
     }
+    if (updatePuskesmasDto.suspended_reason !== undefined) {
+      cleanData.suspended_reason = updatePuskesmasDto.suspended_reason;
+    }
+    if (updatePuskesmasDto.maintenance_message !== undefined) {
+      cleanData.maintenance_message = updatePuskesmasDto.maintenance_message;
+    }
+    if (updatePuskesmasDto.deactivated_reason !== undefined) {
+      cleanData.deactivated_reason = updatePuskesmasDto.deactivated_reason;
+    }
 
     return this.puskesmasService.update(id, cleanData);
   }

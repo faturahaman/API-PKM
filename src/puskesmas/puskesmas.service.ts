@@ -143,6 +143,9 @@ export class PuskesmasService implements OnModuleInit {
             if (updatePuskesmasDto.name !== undefined) validFields.name = updatePuskesmasDto.name;
             if (updatePuskesmasDto.slug !== undefined) validFields.slug = updatePuskesmasDto.slug;
             if (updatePuskesmasDto.status !== undefined) validFields.status = updatePuskesmasDto.status;
+            if (updatePuskesmasDto.suspended_reason !== undefined) validFields.suspended_reason = updatePuskesmasDto.suspended_reason;
+            if (updatePuskesmasDto.maintenance_message !== undefined) validFields.maintenance_message = updatePuskesmasDto.maintenance_message;
+            if (updatePuskesmasDto.deactivated_reason !== undefined) validFields.deactivated_reason = updatePuskesmasDto.deactivated_reason;
         }
 
         // Only perform update if there are valid fields
@@ -163,6 +166,9 @@ export class PuskesmasService implements OnModuleInit {
                     name: updatedPuskesmas.name,
                     slug: updatedPuskesmas.slug,
                     status: updatedPuskesmas.status,
+                    suspended_reason: updatedPuskesmas.suspended_reason,
+                    maintenance_message: updatedPuskesmas.maintenance_message,
+                    deactivated_reason: updatedPuskesmas.deactivated_reason,
                 } : {},
             });
         } catch (error) {
