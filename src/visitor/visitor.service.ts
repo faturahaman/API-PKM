@@ -76,6 +76,16 @@ export class VisitorService {
                 path: path
             });
 
+            // Invalidasi cache harian & chart agar admin melihat data terbaru
+            const tenantKey = puskesmasId || 'global';
+            await Promise.all([
+                this.cacheManager.del(`visitor_count_day_${tenantKey}_${today}`),
+                this.cacheManager.del(`visitor_count_all_${tenantKey}`),
+                this.cacheManager.del(`visitor_chart_${tenantKey}_7d`),
+                this.cacheManager.del(`visitor_chart_${tenantKey}_30d`),
+                this.cacheManager.del(`visitor_chart_${tenantKey}_90d`),
+            ]);
+
             return { message: 'Visitor tracked successfully' };
         } catch (err: any) {
             // ER_DUP_ENTRY berarti visitor hari ini sudah ada (berdasarkan unique index)
@@ -176,6 +186,53 @@ export class VisitorService {
         const result = await this.visitorRepository.count({ where });
 
         await this.cacheManager.set(cacheKey, result, 3600000); // Cache 1 Jam
+        return result;
+    }
+
+    async getChartData(days: number = 30): Promise<{ date: string; visitors: number }[]> {
+        const tenantId = this.tenantContextService.getTenantId() || 'global';
+        const cacheKey = `visitor_chart_${tenantId}_${days}d`;
+
+        const cached = await this.cacheManager.get<{ date: string; visitors: number }[]>(cacheKey);
+        if (cached !== undefined && cached !== null) return cached;
+
+        const end = new Date();
+        const start = new Date();
+        start.setDate(end.getDate() - (days - 1));
+
+        const startStr = start.toISOString().split('T')[0];
+        const endStr = end.toISOString().split('T')[0];
+
+        const qb = this.visitorRepositoryNative
+            .createQueryBuilder('v')
+            .select("DATE_FORMAT(v.visit_date, '%Y-%m-%d')", 'date')
+            .addSelect('COUNT(*)', 'visitors')
+            .where('v.visit_date BETWEEN :start AND :end', { start: startStr, end: endStr })
+            .groupBy('v.visit_date')
+            .orderBy('v.visit_date', 'ASC');
+
+        if (tenantId !== 'global') {
+            qb.andWhere('v.puskesmas_id = :tenantId', { tenantId });
+        }
+
+        const rows: { date: string; visitors: string }[] = await qb.getRawMany();
+
+        // Fill in missing dates with 0
+        const result: { date: string; visitors: number }[] = [];
+        // Normalize date key: handle both "YYYY-MM-DD" and "YYYY-MM-DDT..." formats
+        const map = new Map(rows.map(r => [
+            String(r.date).split('T')[0],
+            Number(r.visitors)
+        ]));
+
+        for (let i = 0; i < days; i++) {
+            const d = new Date(start);
+            d.setDate(start.getDate() + i);
+            const dateStr = d.toISOString().split('T')[0];
+            result.push({ date: dateStr, visitors: map.get(dateStr) ?? 0 });
+        }
+
+        await this.cacheManager.set(cacheKey, result, 300000); // Cache 5 menit
         return result;
     }
 }

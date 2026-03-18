@@ -1,4 +1,4 @@
-import { Controller, Get, HttpCode, Post, Body, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Post, Body, Req, UseGuards, Query } from '@nestjs/common';
 import { VisitorService } from './visitor.service';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
 import type { Request } from 'express';
@@ -47,5 +47,11 @@ export class VisitorController {
   @Get('count-year')
   countByYear() {
     return this.visitorService.countByYear();
+  }
+
+  @Get('chart')
+  getChartData(@Query('days') days?: string) {
+    const parsedDays = days ? parseInt(days, 10) : 30;
+    return this.visitorService.getChartData(parsedDays);
   }
 }
