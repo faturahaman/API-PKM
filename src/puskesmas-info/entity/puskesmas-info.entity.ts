@@ -16,6 +16,9 @@ export class PuskesmasInfo {
     @Column({ nullable: true })
     logo: string;
 
+    @Column({ nullable: true, default: '#3b82f6' })
+    theme_color: string;
+
     @Column({ type: 'text', nullable: true })
     location: string;
 

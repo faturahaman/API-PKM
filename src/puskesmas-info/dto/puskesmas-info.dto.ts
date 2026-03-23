@@ -11,6 +11,10 @@ export class CreatePuskesmasInfoDto {
 
     @IsString()
     @IsOptional()
+    theme_color?: string;
+
+    @IsString()
+    @IsOptional()
     location?: string;
 
     @IsOptional()
