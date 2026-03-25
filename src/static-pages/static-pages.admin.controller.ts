@@ -1,11 +1,23 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, UseInterceptors, UploadedFiles, UploadedFile } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, Query, UseInterceptors, UploadedFiles } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
+import {
+    ApiStandardResponse,
+    ApiPaginatedResponse,
+    ApiErrorResponses,
+    ApiSuccessResponse,
+    ApiCreatedResponseDoc,
+    ApiOperationDetailed,
+    ApiPaginationParams
+} from '../common/decorators/api-docs.decorator';
 import { StaticPagesService } from './static-pages.service';
 import { CreateStaticPageDto } from './dto/create-static-page.dto';
 import { UpdateStaticPageDto } from './dto/update-static-page.dto';
 import { AuthGuard } from '@nestjs/passport';
 import { createMulterOptions } from '../common/multer.utils';
 
+@ApiTags('Admin Static Pages')
+@ApiBearerAuth('JWT-auth')
 @Controller('admin/static-pages')
 @UseGuards(AuthGuard('jwt'))
 export class StaticPagesAdminController {

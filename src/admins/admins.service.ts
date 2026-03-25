@@ -3,15 +3,15 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Admin, AdminRole } from './entity/admin.entity';
 import { UpdateAdminDto } from './dto/update-admin.dto';
-import * as fs from 'fs';
-import * as path from 'path';
 import * as bcrypt from 'bcrypt';
+import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class AdminsService {
   constructor(
     @InjectRepository(Admin)
     private adminRepository: Repository<Admin>,
+    private readonly storageService: StorageService,
   ) { }
 
   async findOneByName(name: string): Promise<Admin | null> {
@@ -22,39 +22,39 @@ export class AdminsService {
     return this.adminRepository.findOne({ where: { id } });
   }
 
- async findAll(search?: string, role?: string, limit?: number, offset?: number): Promise<{ data: Admin[], total: number }> {
-  const query = this.adminRepository.createQueryBuilder('admin');
+  async findAll(search?: string, role?: string, limit?: number, offset?: number): Promise<{ data: Admin[], total: number }> {
+    const query = this.adminRepository.createQueryBuilder('admin');
 
-  if (search) {
-    query.where('admin.name LIKE :search', { search: `%${search}%` });
+    if (search) {
+      query.where('admin.name LIKE :search', { search: `%${search}%` });
+    }
+
+    if (role && role !== 'all') {
+      query.andWhere('admin.role = :role', { role });
+    }
+
+    const total = await query.getCount();
+
+    const data = await query
+      .leftJoinAndSelect('admin.puskesmas', 'puskes') // cukup ini
+      .orderBy('admin.created_at', 'DESC')
+      .skip(offset || 0)
+      .take(limit || parseInt(process.env.DEFAULT_PAGE_LIMIT || '10'))
+      .getMany();
+
+    const transformedData = data.map(admin => {
+      const { password, ...rest } = admin as any;
+      return {
+        ...rest,
+        puskes_name: admin.puskesmas ? admin.puskesmas.name : null,
+      };
+    });
+
+    return { data: transformedData, total };
   }
-
-  if (role && role !== 'all') {
-    query.andWhere('admin.role = :role', { role });
-  }
-
-  const total = await query.getCount();
-
-  const data = await query
-    .leftJoinAndSelect('admin.puskesmas', 'puskes') // cukup ini
-    .orderBy('admin.created_at', 'DESC')
-    .skip(offset || 0)
-    .take(limit || 10)
-    .getMany();
-
-  const transformedData = data.map(admin => {
-    const { password, ...rest } = admin as any;
-    return {
-      ...rest,
-      puskes_name: admin.puskesmas ? admin.puskesmas.name : null,
-    };
-  });
-
-  return { data: transformedData, total };
-}
 
   // Konstanta untuk batasan operator
-  private static readonly MAX_OPERATORS_PER_PUSKESMAS = 2;
+  private static readonly MAX_OPERATORS_PER_PUSKESMAS = parseInt(process.env.MAX_OPERATORS_PER_PUSKESMAS || '2');
 
   async create(name: string, password: string, role?: string, puskesmas_id?: string): Promise<Omit<Admin, 'password'>> {
     // Pengecekan duplikasi nama admin
@@ -64,7 +64,7 @@ export class AdminsService {
     }
 
     // Validasi untuk role OPERATOR
-    if (role === AdminRole.OPERATOR || !role){
+    if (role === AdminRole.OPERATOR || !role) {
       const operatorRole = role as AdminRole || AdminRole.OPERATOR;
 
       // Jika puskesmas_id tidak diisi untuk OPERATOR
@@ -99,61 +99,61 @@ export class AdminsService {
     return result;
   }
 
- async update(id: string, dto: UpdateAdminDto): Promise<Omit<Admin, 'password'>> {
+  async update(id: string, dto: UpdateAdminDto): Promise<Omit<Admin, 'password'>> {
 
-  if (dto.puskesmas_id === '') {
-    dto.puskesmas_id = undefined;
-  }
-
-  const admin = await this.findOne(id);
-  if (!admin) {
-    throw new NotFoundException('Admin tidak ditemukan');
-  }
-
-  // validasi password
-  if (dto.password) {
-    if (!dto.password_confirmation) {
-      throw new BadRequestException('Konfirmasi password wajib diisi');
-    }
-    if (dto.password !== dto.password_confirmation) {
-      throw new BadRequestException('Password dan konfirmasi password tidak cocok');
-    }
-    dto.password = await bcrypt.hash(dto.password, 10);
-  }
-
-  const newRole = dto.role || admin.role;
-  const newPuskesmasId =
-    dto.puskesmas_id !== undefined ? dto.puskesmas_id : admin.puskesmas_id;
-
-  // logic operator
-  if (newRole === AdminRole.OPERATOR) {
-
-    if (!newPuskesmasId) {
-      throw new BadRequestException('Operator harus memiliki puskesmas');
+    if (dto.puskesmas_id === '') {
+      dto.puskesmas_id = undefined;
     }
 
-    const existingOperators = await this.adminRepository
-      .createQueryBuilder('admin')
-      .where('admin.puskesmas_id = :puskesmas_id', { puskesmas_id: newPuskesmasId })
-      .andWhere('admin.role = :role', { role: AdminRole.OPERATOR })
-      .andWhere('admin.id != :id', { id })
-      .getCount();
-
-    if (existingOperators >= AdminsService.MAX_OPERATORS_PER_PUSKESMAS) {
-      throw new BadRequestException(
-        `Puskesmas ini sudah memiliki ${existingOperators} operator`
-      );
+    const admin = await this.findOne(id);
+    if (!admin) {
+      throw new NotFoundException('Admin tidak ditemukan');
     }
+
+    // validasi password
+    if (dto.password) {
+      if (!dto.password_confirmation) {
+        throw new BadRequestException('Konfirmasi password wajib diisi');
+      }
+      if (dto.password !== dto.password_confirmation) {
+        throw new BadRequestException('Password dan konfirmasi password tidak cocok');
+      }
+      dto.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    const newRole = dto.role || admin.role;
+    const newPuskesmasId =
+      dto.puskesmas_id !== undefined ? dto.puskesmas_id : admin.puskesmas_id;
+
+    // logic operator
+    if (newRole === AdminRole.OPERATOR) {
+
+      if (!newPuskesmasId) {
+        throw new BadRequestException('Operator harus memiliki puskesmas');
+      }
+
+      const existingOperators = await this.adminRepository
+        .createQueryBuilder('admin')
+        .where('admin.puskesmas_id = :puskesmas_id', { puskesmas_id: newPuskesmasId })
+        .andWhere('admin.role = :role', { role: AdminRole.OPERATOR })
+        .andWhere('admin.id != :id', { id })
+        .getCount();
+
+      if (existingOperators >= AdminsService.MAX_OPERATORS_PER_PUSKESMAS) {
+        throw new BadRequestException(
+          `Puskesmas ini sudah memiliki ${existingOperators} operator`
+        );
+      }
+    }
+
+    Object.assign(admin, dto);
+
+    const saved = await this.adminRepository.save(admin);
+
+    const { password, ...result } = saved as Admin;
+
+    return result;
   }
-
-  Object.assign(admin, dto);
-
-  const saved = await this.adminRepository.save(admin);
-
-  const { password, ...result } = saved as Admin;
-
-  return result;
-}
 
   async delete(id: string, currentAdminId?: string): Promise<void> {
     const admin = await this.findOne(id);
@@ -166,12 +166,9 @@ export class AdminsService {
       throw new NotFoundException('Tidak dapat menghapus akun yang sedang aktif');
     }
 
-    // Delete photo if exists
+    // Hapus foto profil jika ada
     if (admin.photo && admin.photo !== 'puskesmasLogo.png') {
-      const photoPath = path.join(process.cwd(), 'public', 'uploads', 'profiles', admin.photo);
-      if (fs.existsSync(photoPath)) {
-        fs.unlinkSync(photoPath);
-      }
+      this.storageService.deleteFileByUrl(admin.photo);
     }
 
     await this.adminRepository.delete(id);
@@ -185,11 +182,11 @@ export class AdminsService {
     }
 
     if (filename && filename.trim() !== '') {
-      // Delete old photo if it exists and is not the default
+      // Hapus foto lama jika ada dan bukan foto default
       if (admin.photo && admin.photo !== 'puskesmasLogo.png') {
-        const oldPath = path.join(process.cwd(), 'public', 'uploads', 'profiles', admin.photo);
-        if (fs.existsSync(oldPath)) {
-          fs.unlinkSync(oldPath);
+        const deleted = this.storageService.deleteFileByUrl(admin.photo);
+        if (!deleted) {
+          console.warn(`[AdminsService] Foto lama tidak ditemukan: ${admin.photo}`);
         }
       }
       admin.photo = filename;

@@ -1,6 +1,15 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiQuery } from '@nestjs/swagger';
+import {
+    ApiStandardResponse,
+    ApiPaginatedResponse,
+    ApiErrorResponses,
+    ApiOperationDetailed,
+    ApiPaginationParams
+} from '../common/decorators/api-docs.decorator';
 import { PagesService } from './pages.service';
 
+@ApiTags('Public Pages')
 @Controller('pages')
 export class PagesPublicController {
     constructor(private readonly pagesService: PagesService) { }

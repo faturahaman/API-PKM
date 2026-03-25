@@ -10,6 +10,7 @@ import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
 import { RequestMetaDto } from '../common/dto/request-meta.dto';
+import { StorageService } from '../common/storage/storage.service';
 
 /**
  * Activity Log Decorator for Banner Service
@@ -30,15 +31,17 @@ export class BannerService {
     bannerRepositoryNative: Repository<Banner>,
     private readonly tenantContextService: TenantContextService,
     private readonly logactivityService: LogactivityService,
+    private readonly storageService: StorageService,
   ) {
     this.bannerRepository = new BaseTenantRepository(bannerRepositoryNative, tenantContextService);
   }
 
   // TERIMA FILE DISINI
   async create(createBannerDto: CreateBannerDto, file: Express.Multer.File, requestMeta?: RequestMetaDto): Promise<Banner> {
+    const slug = this.tenantContextService.getTenantId() || 'shared';
     const newBanner = this.bannerRepository.create({
       ...createBannerDto,
-      image_path: `/uploads/banner/${file.filename}`, // Simpan path otomatis
+      image_path: `/${slug}/banner/${file.filename}`, // Baru: /{slug}/banner/{filename}
       is_deleted: 0,
     });
 
@@ -100,10 +103,18 @@ export class BannerService {
 
     let updateData: any = { ...updateBannerDto };
 
-    // Jika user upload gambar baru, update path-nya
+    // Jika user upload gambar baru, update path dan hapus file lama
     if (file) {
-      updateData.image_path = `/uploads/banner/${file.filename}`;
-      // (Optional) Logic hapus gambar lama bisa ditaruh disini kalau mau hemat storage
+      const slug = this.tenantContextService.getTenantId() || 'shared';
+      updateData.image_path = `/${slug}/banner/${file.filename}`;
+
+      // Hapus file lama dari storage untuk mencegah storage bloat
+      if (currentBanner.image_path) {
+        const deleted = this.storageService.deleteFileByUrl(currentBanner.image_path);
+        if (!deleted) {
+          this.logger.warn(`[BannerService] File lama tidak ditemukan: ${currentBanner.image_path}`);
+        }
+      }
     }
 
     const banner = await this.findOne(id);

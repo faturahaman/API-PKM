@@ -12,6 +12,7 @@ import { BaseTenantRepository } from '../common/tenant/base-tenant.repository';
 import { LogactivityService } from '../logactivity/logactivity.service';
 import { LogActivityAction } from '../logactivity/entity/log-activity.entity';
 import { RequestMetaDto } from '../common/dto/request-meta.dto';
+import { StorageService } from '../common/storage/storage.service';
 
 @Injectable()
 export class PagesService {
@@ -29,6 +30,7 @@ export class PagesService {
         menuRepositoryNative: Repository<Menu>,
         private readonly tenantContextService: TenantContextService,
         private readonly logactivityService: LogactivityService,
+        private readonly storageService: StorageService,
     ) {
         this.pageRepository = new BaseTenantRepository(pageRepositoryNative, tenantContextService);
         this.staticPageRepository = new BaseTenantRepository(staticPageRepositoryNative, tenantContextService);
@@ -42,10 +44,11 @@ export class PagesService {
 
         const { menu_id, force_replace, ...pageData } = createPageDto;
 
+        const tenantId = this.tenantContextService.getTenantId() || 'shared';
         const page = this.pageRepository.create({
             ...pageData,
-            image: image ? `/uploads/pages/${image.filename}` : createPageDto.image,
-            file: document ? `/uploads/pages/${document.filename}` : createPageDto.file,
+            image: image ? `/${tenantId}/pages/${image.filename}` : createPageDto.image,
+            file: document ? `/${tenantId}/pages/${document.filename}` : createPageDto.file,
         });
 
         if (menu_id && menu_id !== '' && menu_id !== '0' && menu_id !== null) {
@@ -178,11 +181,11 @@ export class PagesService {
         const dynamicQuery = this.pageRepository.createQueryBuilder('page');
         dynamicQuery.leftJoinAndSelect('page.menu', 'menu');
         dynamicQuery.leftJoinAndSelect('menu.parent', 'parent');
-        
+
         // PENTING: Gunakan andWhere agar tidak menimpa filter tenant otomatis dari BaseTenantRepository
         dynamicQuery.andWhere('page.status = :status', { status: 1 });
         dynamicQuery.andWhere('page.title LIKE :q', { q: `%${q}%` });
-        
+
         // Double safety for tenant filter
         if (tenantId) {
             dynamicQuery.andWhere('page.puskesmas_id = :tid', { tid: tenantId });
@@ -196,10 +199,10 @@ export class PagesService {
         const staticQuery = this.staticPageRepository.createQueryBuilder('static');
         staticQuery.leftJoinAndSelect('static.menu', 'menu');
         staticQuery.leftJoinAndSelect('menu.parent', 'parent');
-        
+
         // PENTING: Gunakan andWhere agar tidak menimpa filter tenant otomatis dari BaseTenantRepository
         staticQuery.andWhere('static.title LIKE :q', { q: `%${q}%` });
-        
+
         // Double safety for tenant filter
         if (tenantId) {
             staticQuery.andWhere('static.puskesmas_id = :tid', { tid: tenantId });
@@ -349,12 +352,24 @@ export class PagesService {
             }
         }
 
-        if (image) {
-            pageData.image = `/uploads/pages/${image.filename}`;
-        }
-
-        if (document) {
-            pageData.file = `/uploads/pages/${document.filename}`;
+        if (image || document) {
+            const slug = this.tenantContextService.getTenantId() || 'shared';
+            if (image) {
+                // Hapus file gambar lama sebelum ganti
+                if (pageData.image) {
+                    const deleted = this.storageService.deleteFileByUrl(pageData.image);
+                    if (!deleted) this.logger.warn(`[PagesService] Gambar lama tidak ditemukan: ${pageData.image}`);
+                }
+                pageData.image = `/${slug}/pages/${image.filename}`;
+            }
+            if (document) {
+                // Hapus file dokumen lama sebelum ganti
+                if (pageData.file) {
+                    const deleted = this.storageService.deleteFileByUrl(pageData.file);
+                    if (!deleted) this.logger.warn(`[PagesService] Dokumen lama tidak ditemukan: ${pageData.file}`);
+                }
+                pageData.file = `/${slug}/pages/${document.filename}`;
+            }
         }
 
         this.pageRepository.merge(pageData, updateData);

@@ -59,7 +59,7 @@ export class GalleryService {
     return savedGallery;
   }
 
-  async findAll(page: number = 1, limit: number = 10, isNoAlbum: boolean = false, albumId?: string) {
+  async findAll(page: number = 1, limit: number = parseInt(process.env.DEFAULT_PAGE_LIMIT || '10'), isNoAlbum: boolean = false, albumId?: string) {
     const skip = (page - 1) * limit;
 
     const where: any = { is_deleted: false };

@@ -55,10 +55,15 @@ export class AgendaService {
     return savedAgenda;
   }
 
-  async findAll(page: number = 1, limit: number = 10) {
+  async findAll(page: number = 1, limit: number = 10, puskesmas_id?: string) {
     const skip = (page - 1) * limit;
+    const where: any = { is_deleted: false };
+    if (puskesmas_id) {
+      where.puskesmas_id = puskesmas_id;
+    }
+
     const [data, total] = await this.agendaRepository.findAndCount({
-      where: { is_deleted: false },
+      where,
       skip,
       take: limit,
       order: { date: 'DESC' },

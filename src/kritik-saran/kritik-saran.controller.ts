@@ -1,8 +1,19 @@
 import { Controller, Get, Post, Put, Delete, Body, Param, Query, UseGuards, ParseUUIDPipe } from '@nestjs/common';
+import { ApiTags, ApiBearerAuth, ApiOperation, ApiParam, ApiBody, ApiQuery } from '@nestjs/swagger';
+import {
+    ApiStandardResponse,
+    ApiPaginatedResponse,
+    ApiErrorResponses,
+    ApiSuccessResponse,
+    ApiCreatedResponseDoc,
+    ApiOperationDetailed,
+    ApiPaginationParams
+} from '../common/decorators/api-docs.decorator';
 import { KritikSaranService } from './kritik-saran.service';
 import { CreateKritikSaranDto, UpdateKritikSaranDto, KritikSaranQueryDto } from './dto/create-kritik-saran.dto';
 import { AuthGuard } from '@nestjs/passport';
 
+@ApiTags('Criticism & Suggestions')
 @Controller()
 export class KritikSaranController {
     constructor(private readonly kritikSaranService: KritikSaranService) { }

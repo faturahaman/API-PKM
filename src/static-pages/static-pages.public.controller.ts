@@ -1,6 +1,13 @@
 import { Controller, Get, Param } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam } from '@nestjs/swagger';
+import {
+    ApiStandardResponse,
+    ApiErrorResponses,
+    ApiOperationDetailed
+} from '../common/decorators/api-docs.decorator';
 import { StaticPagesService } from './static-pages.service';
 
+@ApiTags('Public Static Pages')
 @Controller('static-pages')
 export class StaticPagesPublicController {
     constructor(private readonly staticPagesService: StaticPagesService) { }

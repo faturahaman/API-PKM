@@ -18,7 +18,7 @@ import { LogactivityModule } from '../logactivity/logactivity.module';
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '8h' },
+        signOptions: { expiresIn: (configService.get<string>('JWT_EXPIRES_IN') || '8h') as any },
       }),
     }),
     PuskesmasModule,

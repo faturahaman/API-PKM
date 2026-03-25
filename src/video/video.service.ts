@@ -54,7 +54,8 @@ export class VideoService {
       if (!file) {
         throw new BadRequestException('File video wajib diupload jika bukan embed!');
       }
-      finalDataString = `/uploads/video/${file.filename}`;
+      const slug = this.tenantContextService.getTenantId() || 'shared';
+      finalDataString = `/${slug}/video/${file.filename}`;
     }
 
     const newVideo = this.videoRepository.create({

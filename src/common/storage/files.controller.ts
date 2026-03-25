@@ -1,30 +1,45 @@
-import { Controller, Get, Param, Res, NotFoundException, ForbiddenException, Request } from '@nestjs/common';
+import {
+    Controller,
+    Get,
+    Param,
+    Res,
+    NotFoundException,
+    ForbiddenException,
+    UnauthorizedException,
+    Request,
+} from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiParam, ApiResponse } from '@nestjs/swagger';
 import type { Response } from 'express';
 import { createReadStream, existsSync } from 'fs';
-import { join } from 'path';
-import { StorageService, EXTERNAL_STORAGE_PATH } from './storage.service';
+import { StorageService } from './storage.service';
+import { isPublicModule, StorageModuleType } from './storage.config';
 
 /**
  * Secure File Access Controller
- * 
- * Do NOT expose storage as static files.
- * All file access goes through this controller with tenant validation.
- * 
+ *
  * Endpoint: GET /files/:tenant/:module/:filename
+ *
+ * Access Rules:
+ * - PUBLIC modules (gallery, banner) → accessible without auth token
+ * - PRIVATE modules → require JWT + matching tenant ID
+ * - SUPER_ADMIN → can access all private modules across tenants
  */
+@ApiTags('Storage & Files')
 @Controller('files')
 export class FilesController {
     constructor(private readonly storageService: StorageService) { }
 
-    /**
-     * Get file with tenant validation
-     * 
-     * This ensures:
-     * 1. File exists in tenant's storage
-     * 2. Tenant has access to this file (tenant isolation enforced)
-     * 3. No path traversal attacks
-     */
     @Get(':tenant/:module/:filename')
+    @ApiOperation({
+        summary: 'Get File',
+        description: 'Retrieve a file from storage. Public modules (gallery, banner) are accessible without auth. Private modules require JWT with matching tenant ID.'
+    })
+    @ApiParam({ name: 'tenant', description: 'Tenant ID or "shared" for global files' })
+    @ApiParam({ name: 'module', description: 'Module type: gallery, banner, video, document, pages, static-pages, web-info, profile' })
+    @ApiParam({ name: 'filename', description: 'File name to retrieve' })
+    @ApiResponse({ status: 200, description: 'File stream' })
+    @ApiResponse({ status: 403, description: 'Forbidden - invalid parameters or access denied' })
+    @ApiResponse({ status: 404, description: 'File not found' })
     async getFile(
         @Param('tenant') tenant: string,
         @Param('module') module: string,
@@ -32,68 +47,90 @@ export class FilesController {
         @Res() res: Response,
         @Request() req: any,
     ) {
-        // Get tenant context from request (set by TenantInterceptor)
-        const user = req.user;
-        const userTenantId = req.tenantId;
-        const userRole = user?.role;
-
-        // Validate tenant access
-        // SUPER_ADMIN can access any tenant
-        // OPERATOR can only access their own tenant
-        if (userRole !== 'SUPER_ADMIN' && userTenantId && userTenantId !== tenant) {
-            throw new ForbiddenException('Anda tidak berhak mengakses file dari tenant ini.');
+        // ── Security: Path Traversal ─────────────────────────────────────────
+        if (
+            tenant.includes('..') || tenant.includes('/') || tenant.includes('\\') ||
+            module.includes('..') || module.includes('/') || module.includes('\\') ||
+            filename.includes('..') || filename.includes('/') || filename.includes('\\')
+        ) {
+            throw new ForbiddenException('Nama parameter mengandung karakter terlarang.');
         }
 
-        // Validate module is allowed
-        const allowedModules = ['gallery', 'video', 'banner', 'document', 'pages', 'static-pages', 'web-info', 'profile'];
-        if (!allowedModules.includes(module)) {
-            throw new NotFoundException('Module tidak ditemukan');
+        // ── Security: Allowed Modules Whitelist ──────────────────────────────
+        const allowedModules: StorageModuleType[] = [
+            'gallery', 'banner', 'video', 'document',
+            'pages', 'static-pages', 'web-info', 'profile',
+        ];
+        if (!allowedModules.includes(module as StorageModuleType)) {
+            throw new NotFoundException('Modul tidak valid.');
         }
 
-        // Validate filename - prevent path traversal
-        if (filename.includes('..') || filename.includes('/') || filename.includes('\\')) {
-            throw new ForbiddenException('Nama file tidak valid');
+        // ── Access Control: Public vs Private ────────────────────────────────
+        if (!isPublicModule(module)) {
+            // Private module: wajib ada token
+            const user = req.user;
+
+            if (!user) {
+                throw new UnauthorizedException('Akses file privat memerlukan autentikasi.');
+            }
+
+            // SUPER_ADMIN bisa akses semua tenant
+            if (user.role !== 'SUPER_ADMIN') {
+                const userTenantId = user.puskesmas_id;
+                if (userTenantId !== tenant) {
+                    throw new ForbiddenException(
+                        'Akses ditolak: Anda tidak memiliki izin untuk mengakses file dari tenant ini.',
+                    );
+                }
+            }
         }
+        // Public module (gallery, banner) → skip auth, lanjut langsung
 
-        // Build full path
-        const filePath = join(EXTERNAL_STORAGE_PATH, tenant, module, filename);
+        // ── File Resolution ──────────────────────────────────────────────────
+        const filePath = this.storageService.getFilePath(tenant, module as any, filename);
 
-        // Check if file exists
         if (!existsSync(filePath)) {
-            throw new NotFoundException('File tidak ditemukan');
+            throw new NotFoundException('Berkas tidak ditemukan di sistem penyimpanan.');
         }
 
-        // Determine content type
-        const contentType = this.getContentType(filename);
+        // ── Response ─────────────────────────────────────────────────────────
+        const contentType = this.resolveContentType(filename);
 
-        // Stream file to response
         res.set({
             'Content-Type': contentType,
             'Content-Disposition': `inline; filename="${filename}"`,
+            // Public files: cache 1 tahun. Private: no-cache agar tidak bocor ke browser lain.
+            'Cache-Control': isPublicModule(module)
+                ? 'public, max-age=31536000'
+                : 'private, no-cache, no-store',
         });
 
         const fileStream = createReadStream(filePath);
-        fileStream.pipe(res as any);
+        fileStream.on('error', (err) => {
+            console.error(`[FilesController] Stream error: ${err.message}`);
+            if (!res.headersSent) {
+                res.status(500).json({ message: 'Gagal memproses pengiriman berkas.' });
+            }
+        });
+
+        fileStream.pipe(res);
     }
 
-    /**
-     * Get content type from filename extension
-     */
-    private getContentType(filename: string): string {
+    private resolveContentType(filename: string): string {
         const ext = filename.toLowerCase().split('.').pop();
 
         const contentTypes: Record<string, string> = {
-            'jpg': 'image/jpeg',
-            'jpeg': 'image/jpeg',
-            'png': 'image/png',
-            'gif': 'image/gif',
-            'webp': 'image/webp',
-            'pdf': 'application/pdf',
-            'mp4': 'video/mp4',
-            'webm': 'video/webm',
-            'ogg': 'video/ogg',
-            'mov': 'video/quicktime',
-            'avi': 'video/x-msvideo',
+            jpg: 'image/jpeg',
+            jpeg: 'image/jpeg',
+            png: 'image/png',
+            gif: 'image/gif',
+            webp: 'image/webp',
+            pdf: 'application/pdf',
+            mp4: 'video/mp4',
+            webm: 'video/webm',
+            ogg: 'video/ogg',
+            mov: 'video/quicktime',
+            avi: 'video/x-msvideo',
         };
 
         return contentTypes[ext || ''] || 'application/octet-stream';

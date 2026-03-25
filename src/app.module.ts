@@ -2,12 +2,12 @@ import { Module } from '@nestjs/common';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
 import { AuthModule } from './auth/auth.module';
 import { AdminsModule } from './admins/admins.module';
 import { ConfigModule } from '@nestjs/config';
 import { GalleryModule } from './gallery/gallery.module';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { AlbumModule } from './album/album.module';
 import { BannerModule } from './banner/banner.module';
 import { VideoModule } from './video/video.module';
@@ -29,24 +29,33 @@ import { StorageModule } from './common/storage/storage.module';
 import { KritikSaranModule } from './kritik-saran/kritik-saran.module';
 import { CacheModule } from '@nestjs/cache-manager';
 import { ThrottlerModule } from '@nestjs/throttler';
+import { TestModule } from './test/test.module';
 
 @Module({
   imports: [
+    // Serve static files from public folder - untuk akses gambar langsung
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'public'),
+      serveRoot: '/', // Serve di root URL
+      serveStaticOptions: {
+        fallthrough: false,
+      },
+    }),
     ThrottlerModule.forRoot([
       {
         name: 'short',
-        ttl: 1000,   // 1 second
-        limit: 10,   // 10 requests per second
+        ttl: parseInt(process.env.THROTTLER_SHORT_TTL || '1000'),
+        limit: parseInt(process.env.THROTTLER_SHORT_LIMIT || '10'),
       },
       {
         name: 'medium',
-        ttl: 60000,  // 1 minute
-        limit: 100,  // 100 requests per minute (default)
+        ttl: parseInt(process.env.THROTTLER_MEDIUM_TTL || '60000'),
+        limit: parseInt(process.env.THROTTLER_MEDIUM_LIMIT || '100'),
       },
       {
         name: 'long',
-        ttl: 3600000, // 1 hour
-        limit: 1000,  // 1000 requests per hour
+        ttl: parseInt(process.env.THROTTLER_LONG_TTL || '3600000'),
+        limit: parseInt(process.env.THROTTLER_LONG_LIMIT || '1000'),
       },
     ]),
     RecaptchaModule,
@@ -67,9 +76,6 @@ import { ThrottlerModule } from '@nestjs/throttler';
     AdminsModule,
     AuthModule,
     GalleryModule,
-    ServeStaticModule.forRoot({
-      rootPath: join(process.cwd(), 'public'),
-    }),
     AlbumModule,
     BannerModule,
     VideoModule,
@@ -88,10 +94,11 @@ import { ThrottlerModule } from '@nestjs/throttler';
     StorageModule,
     KritikSaranModule,
     CacheModule.register({
-      isGlobal: true, // <-- Wajib biar gak usah import CacheModule di tiap module
-      ttl: 60000, // <-- NestJS Cache v2 ke atas pakai Milliseconds (60000 ms = 1 menit)
-      max: 100,
+      isGlobal: true,
+      ttl: parseInt(process.env.CACHE_TTL || '60000'),
+      max: parseInt(process.env.CACHE_MAX || '100'),
     }),
+    TestModule,
   ],
   controllers: [AppController, UploadAdminController],
   providers: [AppService],

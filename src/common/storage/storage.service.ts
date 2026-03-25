@@ -1,178 +1,144 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
-import { existsSync, mkdirSync, unlinkSync, readdirSync, statSync, readFileSync, writeFileSync } from 'fs';
+import {
+    existsSync,
+    mkdirSync,
+    unlinkSync,
+    readdirSync,
+    statSync,
+    readFileSync,
+    writeFileSync,
+} from 'fs';
 import { join, extname } from 'path';
 import { v4 as uuidv4 } from 'uuid';
+import {
+    StorageModuleType,
+    MODULE_STORAGE_CONFIG,
+    STORAGE_ROOT as CONFIG_STORAGE_ROOT,
+    PUBLIC_STORAGE_ROOT,
+    getPublicStoragePath,
+} from './storage.config';
 
-/**
- * External storage path - outside project directory
- */
-export const EXTERNAL_STORAGE_PATH = process.env.STORAGE_PATH || '/data/pkm-storage';
+// Re-export untuk backward compat (FilesController mengimport ini)
+export { STORAGE_ROOT } from './storage.config';
+export type StorageModule = StorageModuleType;
 
-/**
- * Upload types
- */
-export type StorageModule = 'gallery' | 'video' | 'banner' | 'document' | 'pages' | 'static-pages' | 'web-info' | 'profile';
-
-/**
- * Konfigurasi storage per module
- */
-const STORAGE_CONFIG: Record<StorageModule, { maxSize: number; allowedMimeTypes: RegExp; allowedExtensions: string[] }> = {
-    profile: {
-        maxSize: 2 * 1024 * 1024,
-        allowedMimeTypes: /^image\/(jpg|jpeg|png)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png'],
-    },
-    gallery: {
-        maxSize: 3 * 1024 * 1024,
-        allowedMimeTypes: /^image\/(jpg|jpeg|png)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png'],
-    },
-    video: {
-        maxSize: 15 * 1024 * 1024,
-        allowedMimeTypes: /^video\/(mp4|webm|ogg|quicktime|x-msvideo)$/,
-        allowedExtensions: ['.mp4', '.webm', '.ogg', '.mov', '.avi'],
-    },
-    banner: {
-        maxSize: 5 * 1024 * 1024,
-        allowedMimeTypes: /^image\/(jpg|jpeg|png|gif)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif'],
-    },
-    document: {
-        maxSize: 10 * 1024 * 1024,
-        allowedMimeTypes: /^(application\/pdf|image\/(jpg|jpeg|png))$/,
-        allowedExtensions: ['.pdf', '.jpg', '.jpeg', '.png'],
-    },
-    pages: {
-        maxSize: 10 * 1024 * 1024,
-        allowedMimeTypes: /^(image\/(jpg|jpeg|png|webp)|application\/pdf)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp', '.pdf'],
-    },
-    'static-pages': {
-        maxSize: 10 * 1024 * 1024,
-        allowedMimeTypes: /^(image\/(jpg|jpeg|png|webp)|application\/pdf)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp', '.pdf'],
-    },
-    'web-info': {
-        maxSize: 2 * 1024 * 1024,
-        allowedMimeTypes: /^image\/(jpg|jpeg|png)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png'],
-    },
-};
+const STORAGE_TENANTS_DIR = 'tenants';
 
 @Injectable()
 export class StorageService {
     constructor() {
-        // Ensure external storage directory exists
-        this.ensureStorageDirectory();
+        this.ensureStorageRoot();
     }
 
-    /**
-     * Ensure base storage directory exists
-     */
-    private ensureStorageDirectory(): void {
-        if (!existsSync(EXTERNAL_STORAGE_PATH)) {
-            mkdirSync(EXTERNAL_STORAGE_PATH, { recursive: true });
-            console.log(`✅ Created external storage directory: ${EXTERNAL_STORAGE_PATH}`);
+    // ─── Directory Helpers ────────────────────────────────────────────────────
+
+    private ensureStorageRoot(): void {
+        if (!existsSync(PUBLIC_STORAGE_ROOT)) {
+            mkdirSync(PUBLIC_STORAGE_ROOT, { recursive: true });
+            console.log(`✅ Created public storage directory: ${PUBLIC_STORAGE_ROOT}`);
         }
     }
 
     /**
-     * Get tenant folder path
-     * Format: /data/pkm-storage/{tenant-id}/
+     * Get path untuk slug (puskesmas) di public folder.
+     * Format: {PUBLIC_STORAGE_ROOT}/{slug}
      */
-    getTenantPath(tenantId: string): string {
-        return join(EXTERNAL_STORAGE_PATH, tenantId);
+    getTenantPath(slug: string): string {
+        return join(PUBLIC_STORAGE_ROOT, slug);
+    }
+
+    getModulePath(slug: string, module: StorageModule): string {
+        return join(this.getTenantPath(slug), module);
     }
 
     /**
-     * Get module folder path within tenant
-     * Format: /data/pkm-storage/{tenant-id}/{module}/
+     * Get absolute filesystem path untuk sebuah file.
+     * Format: {PUBLIC_STORAGE_ROOT}/{slug}/{module}/{filename}
      */
-    getModulePath(tenantId: string, module: StorageModule): string {
-        return join(EXTERNAL_STORAGE_PATH, tenantId, module);
+    getFilePath(slug: string, module: StorageModule, filename: string): string {
+        return join(this.getModulePath(slug, module), filename);
     }
 
     /**
-     * Ensure tenant directory exists
+     * Get absolute filesystem path dari URL path yang disimpan di DB.
+     * Input:  /{slug}/{module}/{filename}
+     * Output: {PUBLIC_STORAGE_ROOT}/{slug}/{module}/{filename}
      */
-    ensureTenantDirectory(tenantId: string): void {
-        const tenantPath = this.getTenantPath(tenantId);
+    getFilePathFromUrl(urlPath: string): string | null {
+        if (!urlPath) return null;
+        // Format: /{slug}/{module}/{filename}
+        const parts = urlPath.split('/').filter(Boolean);
+        // parts[0]={slug}, parts[1]={module}, parts[2]={filename}
+        if (parts.length < 3) return null;
+
+        const [slug, module, filename] = parts;
+        return this.getFilePath(slug, module as StorageModule, filename);
+    }
+
+    ensureTenantDirectory(slug: string): void {
+        const tenantPath = this.getTenantPath(slug);
         if (!existsSync(tenantPath)) {
             mkdirSync(tenantPath, { recursive: true });
         }
     }
 
-    /**
-     * Ensure module directory exists within tenant
-     */
-    ensureModuleDirectory(tenantId: string, module: StorageModule): void {
-        const modulePath = this.getModulePath(tenantId, module);
+    ensureModuleDirectory(slug: string, module: StorageModule): void {
+        const modulePath = this.getModulePath(slug, module);
         if (!existsSync(modulePath)) {
             mkdirSync(modulePath, { recursive: true });
         }
     }
 
-    /**
-     * Generate unique filename for tenant storage
-     */
-    generateFilename(originalName: string, module: StorageModule): string {
+    // ─── File Operations ──────────────────────────────────────────────────────
+
+    generateFilename(originalName: string): string {
         const ext = extname(originalName).toLowerCase();
-        const uuid = uuidv4();
-        const prefix = module.substring(0, 4).toUpperCase();
-        return `${prefix}-${uuid}${ext}`;
+        return `${uuidv4()}${ext}`;
     }
 
     /**
-     * Validate file before storage
+     * Validasi file sebelum disimpan.
+     * Menggunakan MODULE_STORAGE_CONFIG sebagai single source of truth.
      */
     validateFile(file: Express.Multer.File, module: StorageModule): void {
-        const config = STORAGE_CONFIG[module];
+        const config = MODULE_STORAGE_CONFIG[module];
 
-        // Check file size
         if (file.size > config.maxSize) {
-            throw new BadRequestException(`File terlalu besar! Maksimal ${config.maxSize / 1024 / 1024}MB`);
+            throw new BadRequestException(
+                `File terlalu besar! Maksimal ${config.maxSize / 1024 / 1024}MB`,
+            );
         }
 
-        // Check MIME type
         if (!config.allowedMimeTypes.test(file.mimetype)) {
-            throw new BadRequestException('Tipe file tidak valid!');
+            throw new BadRequestException(config.errorMessage);
         }
 
-        // Check extension
         const ext = extname(file.originalname).toLowerCase();
         if (!config.allowedExtensions.includes(ext)) {
-            throw new BadRequestException('Ekstensi file tidak valid!');
+            throw new BadRequestException(config.errorMessage);
         }
     }
 
     /**
-     * Store file with tenant isolation
-     * Returns the stored file path relative to storage root
+     * Simpan file ke storage dengan slug isolation.
+     * File akan disimpan di: public/{slug}/{module}/{filename}
+     * Returns: { filename, path (relative), url }
      */
     async storeFile(
-        tenantId: string,
+        slug: string,
         module: StorageModule,
         file: Express.Multer.File,
     ): Promise<{ filename: string; path: string; url: string }> {
-        // Validate file
         this.validateFile(file, module);
+        this.ensureModuleDirectory(slug, module);
 
-        // Ensure directories exist
-        this.ensureModuleDirectory(tenantId, module);
+        const filename = this.generateFilename(file.originalname);
+        const filePath = this.getFilePath(slug, module, filename);
 
-        // Generate unique filename
-        const filename = this.generateFilename(file.originalname, module);
-        const modulePath = this.getModulePath(tenantId, module);
-        const filePath = join(modulePath, filename);
-
-        // Write file to storage
-        // Handle both memory storage (file.buffer) and disk storage (file.path)
         let fileData: Buffer;
         if (file.buffer) {
-            // Memory storage - use buffer directly
             fileData = file.buffer;
         } else if (file.path) {
-            // Disk storage - read from temporary path
             fileData = readFileSync(file.path);
         } else {
             throw new BadRequestException('Data file tidak ditemukan!');
@@ -180,57 +146,51 @@ export class StorageService {
 
         writeFileSync(filePath, fileData);
 
-        // Return relative path and URL
-        const relativePath = `${tenantId}/${module}/${filename}`;
-
+        const relativeUrl = `${slug}/${module}/${filename}`;
         return {
             filename,
-            path: relativePath,
-            url: `/files/${relativePath}`,
+            path: relativeUrl,
+            url: `/${relativeUrl}`,
         };
     }
 
     /**
-     * Delete file from tenant storage
+     * Hapus file dari storage.
+     * Bisa menerima filename + slug/module ATAU URL path langsung.
      */
-    deleteFile(tenantId: string, module: StorageModule, filename: string): boolean {
-        const filePath = join(EXTERNAL_STORAGE_PATH, tenantId, module, filename);
+    deleteFile(slug: string, module: StorageModule, filename: string): boolean {
+        const filePath = this.getFilePath(slug, module, filename);
+        return this.deleteByAbsolutePath(filePath);
+    }
 
-        if (existsSync(filePath)) {
-            unlinkSync(filePath);
+    /**
+     * Hapus file berdasarkan URL path yang tersimpan di DB.
+     * Input: /{slug}/{module}/{filename}
+     */
+    deleteFileByUrl(urlPath: string): boolean {
+        const absPath = this.getFilePathFromUrl(urlPath);
+        if (!absPath) return false;
+        return this.deleteByAbsolutePath(absPath);
+    }
+
+    private deleteByAbsolutePath(absPath: string): boolean {
+        if (existsSync(absPath)) {
+            unlinkSync(absPath);
             return true;
         }
         return false;
     }
 
-    /**
-     * Check if file exists
-     */
-    fileExists(tenantId: string, module: StorageModule, filename: string): boolean {
-        const filePath = join(EXTERNAL_STORAGE_PATH, tenantId, module, filename);
-        return existsSync(filePath);
+    fileExists(slug: string, module: StorageModule, filename: string): boolean {
+        return existsSync(this.getFilePath(slug, module, filename));
     }
 
-    /**
-     * Get full file path for reading
-     */
-    getFilePath(tenantId: string, module: StorageModule, filename: string): string {
-        return join(EXTERNAL_STORAGE_PATH, tenantId, module, filename);
-    }
+    listFiles(slug: string, module: StorageModule): string[] {
+        const modulePath = this.getModulePath(slug, module);
+        if (!existsSync(modulePath)) return [];
 
-    /**
-     * List files in tenant module directory
-     */
-    listFiles(tenantId: string, module: StorageModule): string[] {
-        const modulePath = this.getModulePath(tenantId, module);
-
-        if (!existsSync(modulePath)) {
-            return [];
-        }
-
-        return readdirSync(modulePath).filter(file => {
-            const filePath = join(modulePath, file);
-            return statSync(filePath).isFile();
-        });
+        return readdirSync(modulePath).filter((file) =>
+            statSync(join(modulePath, file)).isFile(),
+        );
     }
 }

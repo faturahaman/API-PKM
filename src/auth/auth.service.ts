@@ -120,6 +120,7 @@ export class AuthService {
                 name: admin.name,
                 role: admin.role,
                 puskesmas_id: admin.puskesmas_id,
+                photo: admin.photo,
             },
         };
     }
@@ -172,6 +173,7 @@ export class AuthService {
                     id: user.sub,
                     name: user.name,
                     role: user.role,
+                    photo: user.photo,
                     active_tenant: null,
                     active_tenant_name: 'Semua Puskesmas (Global)',
                 },
@@ -234,6 +236,7 @@ export class AuthService {
                 id: user.sub,
                 name: user.name,
                 role: user.role,
+                photo: user.photo,
                 active_tenant: switchTenantDto.tenant_id,
                 active_tenant_name: targetPuskesmas.name,
             },

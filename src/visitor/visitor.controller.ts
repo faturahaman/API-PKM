@@ -1,10 +1,18 @@
 import { Controller, Get, HttpCode, Post, Body, Req, UseGuards, Query } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiBody, ApiQuery, ApiBearerAuth } from '@nestjs/swagger';
+import {
+  ApiStandardResponse,
+  ApiErrorResponses,
+  ApiCreatedResponseDoc,
+  ApiOperationDetailed
+} from '../common/decorators/api-docs.decorator';
 import { VisitorService } from './visitor.service';
 import { CreateVisitorDto } from './dto/create-visitor.dto';
 import type { Request } from 'express';
 import { ThrottlerGuard, Throttle } from '@nestjs/throttler';
 
-@Controller('visitor')
+@ApiTags('Visitor Tracking')
+@Controller('v-stats')
 export class VisitorController {
   constructor(private readonly visitorService: VisitorService) { }
 
@@ -16,7 +24,7 @@ export class VisitorController {
     return this.visitorService.create(createVisitorDto);
   }
 
-  @Post('log')
+  @Post('v-session')
   @UseGuards(ThrottlerGuard)
   @Throttle({ short: { ttl: 60000, limit: 30 }, medium: { ttl: 3600000, limit: 500 } })
   @HttpCode(200)

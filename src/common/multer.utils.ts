@@ -3,116 +3,21 @@ import { extname, join } from 'path';
 import { existsSync, mkdirSync } from 'fs';
 import { BadRequestException } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
+import {
+    StorageModuleType,
+    MODULE_STORAGE_CONFIG,
+    PUBLIC_STORAGE_ROOT,
+} from './storage/storage.config';
+
+// Re-export for backward compatibility
+export type UploadType = StorageModuleType;
 
 /**
- * Upload types dengan konfigurasi masing-masing
- */
-export type UploadType = 'profile' | 'gallery' | 'video' | 'banner' | 'document' | 'pages' | 'static-pages' | 'web-info';
-
-/**
- * Konfigurasi untuk setiap tipe upload
- */
-interface UploadConfig {
-    folder: string;
-    maxSize: number; // dalam bytes
-    allowedMimeTypes: RegExp;
-    allowedExtensions: string[];
-    errorMessage: string;
-    filenamePrefix?: string;
-}
-
-const UPLOAD_CONFIGS: Record<UploadType, UploadConfig> = {
-    profile: {
-        folder: 'profiles',
-        maxSize: 2 * 1024 * 1024, // 2MB
-        allowedMimeTypes: /^image\/(jpg|jpeg|png)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png'],
-        errorMessage: 'Format file tidak valid! Hanya jpg, jpeg, png yang diperbolehkan.',
-        filenamePrefix: 'admin',
-    },
-    gallery: {
-        folder: 'gallery',
-        maxSize: 3 * 1024 * 1024, // 3MB
-        allowedMimeTypes: /^image\/(jpg|jpeg|png)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png'],
-        errorMessage: 'Format file tidak valid! Hanya jpg, jpeg, png yang diperbolehkan.',
-    },
-    video: {
-        folder: 'video',
-        maxSize: 15 * 1024 * 1024, // 15MB
-        allowedMimeTypes: /^video\/(mp4|webm|ogg|quicktime|x-msvideo)$/,
-        allowedExtensions: ['.mp4', '.webm', '.ogg', '.mov', '.avi'],
-        errorMessage: 'Format file tidak valid! Hanya mp4, webm, ogg, mov, avi yang diperbolehkan.',
-        filenamePrefix: 'VID',
-    },
-    banner: {
-        folder: 'banner',
-        maxSize: 5 * 1024 * 1024, // 5MB
-        allowedMimeTypes: /^image\/(jpg|jpeg|png|gif)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png', '.gif'],
-        errorMessage: 'Format file tidak valid! Hanya jpg, jpeg, png, gif yang diperbolehkan.',
-    },
-    document: {
-        folder: 'documents',
-        maxSize: 10 * 1024 * 1024, // 10MB
-        allowedMimeTypes: /^(application\/pdf|image\/(jpg|jpeg|png))$/,
-        allowedExtensions: ['.pdf', '.jpg', '.jpeg', '.png'],
-        errorMessage: 'Format file tidak valid! Hanya pdf, jpg, jpeg, png yang diperbolehkan.',
-        filenamePrefix: 'DOC',
-    },
-    pages: {
-        folder: 'pages',
-        maxSize: 10 * 1024 * 1024, // Naikkan jadi 10MB untuk dokumen
-        allowedMimeTypes: /^(image\/(jpg|jpeg|png|webp)|application\/pdf)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp', '.pdf'],
-        errorMessage: 'Format file tidak valid! Hanya gambar (jpg, png, webp) dan PDF yang diperbolehkan.',
-        filenamePrefix: 'PAGE',
-    },
-    'static-pages': {
-        folder: 'static-pages',
-        maxSize: 10 * 1024 * 1024, // 10MB
-        allowedMimeTypes: /^(image\/(jpg|jpeg|png|webp)|application\/pdf)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png', '.webp', '.pdf'],
-        errorMessage: 'Format file tidak valid! Hanya gambar (jpg, png, webp) dan PDF yang diperbolehkan.',
-        filenamePrefix: 'STATIC',
-    },
-    'web-info': {
-        folder: 'web-info',
-        maxSize: 2 * 1024 * 1024, // 2MB
-        allowedMimeTypes: /^image\/(jpg|jpeg|png)$/,
-        allowedExtensions: ['.jpg', '.jpeg', '.png'],
-        errorMessage: 'Format file tidak valid! Hanya gambar (jpg, jpeg, png) yang diperbolehkan.',
-        filenamePrefix: 'LOGO',
-    },
-};
-
-/**
- * Sanitize filename untuk mencegah path traversal attacks
- */
-function sanitizeFilename(filename: string): string {
-    // Remove path separators dan special characters
-    return filename
-        .replace(/[\/\\]/g, '')
-        .replace(/[^a-zA-Z0-9._-]/g, '_')
-        .substring(0, 100); // Limit panjang filename
-}
-
-/**
- * Factory function untuk membuat multer options berdasarkan tipe upload
- * 
- * Security features:
- * - MIME type validation (whitelist)
- * - File extension validation (double-check)
- * - Filename sanitization (prevent path traversal)
- * - UUID-based filenames (prevent collisions & predictable names)
- * - File size limits per type
- * - Automatic directory creation with proper permissions
- * 
- * @param uploadType - Tipe upload: 'profile', 'gallery', atau 'video'
- * @returns Multer options object
+ * Factory function untuk membuat multer options berdasarkan tipe upload.
+ * Semua konfigurasi diambil dari MODULE_STORAGE_CONFIG (single source of truth).
  */
 export function createMulterOptions(uploadType: UploadType) {
-    const config = UPLOAD_CONFIGS[uploadType];
+    const config = MODULE_STORAGE_CONFIG[uploadType];
 
     return {
         limits: {
@@ -120,10 +25,24 @@ export function createMulterOptions(uploadType: UploadType) {
         },
 
         storage: diskStorage({
-            destination: (req, file, cb) => {
-                const uploadPath = join(process.cwd(), 'public', 'uploads', config.folder);
+            destination: (req: any, file, cb) => {
+                // Resolve tenant ID:
+                // Priority 1: req.tenantId (set oleh TenantInterceptor)
+                // Priority 2: from JWT user claims
+                // Fallback: 'shared'
+                let tenantId = req.tenantId;
 
-                // Buat folder jika belum ada
+                if (!tenantId && req.user) {
+                    tenantId = req.user.role === 'SUPER_ADMIN'
+                        ? req.user.active_tenant
+                        : req.user.puskesmas_id;
+                }
+
+                tenantId = tenantId || 'shared';
+
+                // NEW: Simpan ke public/{tenantId}/{uploadType} untuk akses langsung
+                const uploadPath = join(PUBLIC_STORAGE_ROOT, tenantId, uploadType);
+
                 if (!existsSync(uploadPath)) {
                     mkdirSync(uploadPath, { recursive: true });
                 }
@@ -132,15 +51,9 @@ export function createMulterOptions(uploadType: UploadType) {
             },
 
             filename: (req, file, cb) => {
-                // Sanitize original filename
-                const sanitizedOriginal = sanitizeFilename(file.originalname);
-                const ext = extname(sanitizedOriginal).toLowerCase();
-
-                // Generate unique filename dengan UUID
-                const uuid = uuidv4();
-                const prefix = config.filenamePrefix ? `${config.filenamePrefix}-` : '';
-                const filename = `${prefix}${uuid}${ext}`;
-
+                const ext = extname(file.originalname).toLowerCase();
+                // UUID-based filename: aman dari collision dan path enumeration
+                const filename = `${uuidv4()}${ext}`;
                 cb(null, filename);
             },
         }),
@@ -148,20 +61,14 @@ export function createMulterOptions(uploadType: UploadType) {
         fileFilter: (req: any, file: Express.Multer.File, cb: any) => {
             const ext = extname(file.originalname).toLowerCase();
 
-            // Validasi 1: Check MIME type
+            // Validasi 1: MIME type
             if (!config.allowedMimeTypes.test(file.mimetype)) {
-                return cb(
-                    new BadRequestException(config.errorMessage),
-                    false
-                );
+                return cb(new BadRequestException(config.errorMessage), false);
             }
 
-            // Validasi 2: Double-check file extension
+            // Validasi 2: File extension (double-check)
             if (!config.allowedExtensions.includes(ext)) {
-                return cb(
-                    new BadRequestException(config.errorMessage),
-                    false
-                );
+                return cb(new BadRequestException(config.errorMessage), false);
             }
 
             cb(null, true);
@@ -170,13 +77,69 @@ export function createMulterOptions(uploadType: UploadType) {
 }
 
 /**
- * Helper function untuk mendapatkan public path dari uploaded file
+ * Helper: Buat public URL path untuk file yang sudah diupload.
+ * Format baru: /{slug}/{uploadType}/{filename}
  * 
- * @param uploadType - Tipe upload
- * @param filename - Nama file yang di-generate oleh multer
- * @returns Public path untuk disimpan di database
+ * Ini将使文件可以直接从 public folder 访问，无需通过 /files endpoint。
+ *
+ * @param uploadType - Tipe modul
+ * @param filename   - Nama file hasil UUID dari multer
+ * @param slug       - Tenant slug (puskesmas slug), default 'shared'
  */
-export function getPublicPath(uploadType: UploadType, filename: string): string {
-    const config = UPLOAD_CONFIGS[uploadType];
-    return `/uploads/${config.folder}/${filename}`;
+export function getPublicPath(
+    uploadType: UploadType,
+    filename: string,
+    slug: string = 'shared',
+): string {
+    return `/${slug}/${uploadType}/${filename}`;
+}
+
+/**
+ * Helper: Ekstrak nama file dari stored path URL.
+ * Format baru: /{slug}/{module}/{filename}
+ * Output: {filename}
+ */
+export function extractFilenameFromPath(filePath: string): string | null {
+    if (!filePath) return null;
+    const parts = filePath.split('/');
+    return parts[parts.length - 1] || null;
+}
+
+/**
+ * Helper: Ekstrak slug dari stored path URL.
+ * Input:  /{slug}/{module}/{filename}
+ * Output: {slug}
+ */
+export function extractSlugFromPath(filePath: string): string | null {
+    if (!filePath) return null;
+    // Format: /{slug}/{module}/{filename}
+    const parts = filePath.split('/');
+    // parts[0]='', parts[1]={slug}
+    return parts[1] || null;
+}
+
+/**
+ * Helper: Ekstrak module dari stored path URL.
+ * Input:  /{slug}/{module}/{filename}
+ * Output: {module}
+ */
+export function extractModuleFromPath(filePath: string): string | null {
+    if (!filePath) return null;
+    const parts = filePath.split('/');
+    return parts[2] || null;
+}
+
+/**
+ * Helper: Buat absolute filesystem path dari stored URL path.
+ * Input:  /{slug}/{module}/{filename}
+ * Output: {PUBLIC_STORAGE_ROOT}/{slug}/{module}/{filename}
+ */
+export function resolveAbsolutePath(urlPath: string): string | null {
+    const slug = extractSlugFromPath(urlPath);
+    const module = extractModuleFromPath(urlPath);
+    const filename = extractFilenameFromPath(urlPath);
+
+    if (!slug || !module || !filename) return null;
+
+    return join(PUBLIC_STORAGE_ROOT, slug, module, filename);
 }
