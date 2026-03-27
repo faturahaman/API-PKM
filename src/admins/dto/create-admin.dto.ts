@@ -82,6 +82,7 @@ export class CreateAdminDto {
         format: 'uuid'
     })
     @ValidateIf(o => o.role === AdminRole.OPERATOR)
+    @IsOptional()
     @IsUUID()
     puskesmas_id?: string;
 

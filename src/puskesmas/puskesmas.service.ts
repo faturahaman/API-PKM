@@ -186,6 +186,10 @@ export class PuskesmasService implements OnModuleInit {
             slug: puskesToDelete.slug,
         } : {};
 
+        // Lepas relasi foreign key pada admin (set puskesmas_id menjadi null)
+        // Hal ini untuk menghindari error "Internal Server Error" (FOREIGN KEY constraint failed)
+        await this.puskesmasRepository.manager.update('admins', { puskesmas_id: id }, { puskesmas_id: null });
+
         await this.puskesmasRepository.delete(id);
 
         // Log activity - DELETE

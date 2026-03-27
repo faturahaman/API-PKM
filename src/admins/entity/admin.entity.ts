@@ -105,7 +105,7 @@ export class Admin {
         type: () => Puskesmas,
         nullable: true
     })
-    @ManyToOne(() => Puskesmas, { nullable: true, eager: true })
+    @ManyToOne(() => Puskesmas, { nullable: true, eager: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'puskesmas_id' })
     puskesmas: Puskesmas;
 

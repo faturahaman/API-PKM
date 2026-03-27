@@ -44,8 +44,14 @@ export class PuskesmasController {
   })
   @ApiStandardResponse({ type: Puskesmas, isArray: true, description: 'List of active puskesma' })
   @ApiErrorResponses()
-  findAll() {
-    return this.puskesmasService.findAll();
+  findAll(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('search') search?: string
+  ) {
+    const pageNumber = page ? parseInt(page, 10) : 1;
+    const limitNumber = limit ? parseInt(limit, 10) : 10;
+    return this.puskesmasService.findAll(pageNumber, limitNumber, search);
   }
 
   @Get(':id')
