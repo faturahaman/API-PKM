@@ -47,7 +47,9 @@ async function bootstrap() {
   });
 
   app.use(helmet({
-    crossOriginResourcePolicy: { policy: "cross-origin" }
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    xFrameOptions: false,
+    contentSecurityPolicy: false,
   }));
 
   app.useGlobalPipes(new ValidationPipe({
