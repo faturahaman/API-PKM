@@ -98,7 +98,7 @@ export class Admin {
         nullable: true
     })
     @Column({ type: 'uuid', nullable: true })
-    puskesmas_id: string;
+    puskesmas_id: string | null;
 
     @ApiPropertyOptional({
         description: 'Relation to the puskeswan this admin manages',
@@ -107,7 +107,7 @@ export class Admin {
     })
     @ManyToOne(() => Puskesmas, { nullable: true, eager: true, onDelete: 'SET NULL' })
     @JoinColumn({ name: 'puskesmas_id' })
-    puskesmas: Puskesmas;
+    puskesmas: Puskesmas | null;
 
     @ApiProperty({
         example: '2026-03-24T21:19:36Z',

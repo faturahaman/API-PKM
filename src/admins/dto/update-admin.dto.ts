@@ -95,7 +95,8 @@ export class UpdateAdminDto {
         type: String,
         format: 'uuid'
     })
+    @IsOptional()
     @ValidateIf(o => o.puskesmas_id !== '' && o.puskesmas_id !== null)
     @IsUUID()
-    puskesmas_id?: string;
+    puskesmas_id?: string | null;
 }

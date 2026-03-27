@@ -1,0 +1,63 @@
+  async update(id: string, dto: UpdateAdminDto): Promise<Omit<Admin, 'password'>> {
+    const admin = await this.findOne(id);
+    if (!admin) {
+      throw new NotFoundException('Admin tidak ditemukan');
+    }
+
+    if (dto.password) {
+      if (!dto.password_confirmation) {
+        throw new BadRequestException('Konfirmasi password wajib diisi');
+      }
+      if (dto.password !== dto.password_confirmation) {
+        throw new BadRequestException('Password dan konfirmasi password tidak cocok');
+      }
+      dto.password = await bcrypt.hash(dto.password, 10);
+    }
+
+    const newRole = dto.role || admin.role;
+    
+    // Handle empty string as null (unassignment)
+    if (dto.puskesmas_id === '') {
+      dto.puskesmas_id = null;
+    }
+
+    const newPuskesmasId =
+      dto.puskesmas_id !== undefined ? dto.puskesmas_id : admin.puskesmas_id;
+
+    // logic operator: must have puskesmas
+    if (newRole === AdminRole.OPERATOR) {
+      if (!newPuskesmasId) {
+        throw new BadRequestException('Operator harus memiliki puskesmas');
+      }
+
+      const existingOperators = await this.adminRepository
+        .createQueryBuilder('admin')
+        .where('admin.puskesmas_id = :puskesmas_id', { puskesmas_id: newPuskesmasId })
+        .andWhere('admin.role = :role', { role: AdminRole.OPERATOR })
+        .andWhere('admin.id != :id', { id })
+        .getCount();
+
+      if (existingOperators >= AdminsService.MAX_OPERATORS_PER_PUSKESMAS) {
+        throw new BadRequestException(
+          `Puskesmas ini sudah memiliki ${existingOperators} operator`
+        );
+      }
+    }
+
+    // Explicitly handle puskesmas_id change to ensure relation objects don't interfere
+    if (dto.puskesmas_id !== undefined) {
+      admin.puskesmas_id = dto.puskesmas_id;
+      admin.puskesmas = null; // Clear eager-loaded object
+    }
+
+    // Assign other properties
+    const { puskesmas_id, ...otherDto } = dto;
+    Object.assign(admin, otherDto);
+
+    const saved = await this.adminRepository.save(admin);
+
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const { password, ...result } = saved as Admin;
+
+    return result;
+  }

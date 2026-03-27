@@ -100,17 +100,11 @@ export class AdminsService {
   }
 
   async update(id: string, dto: UpdateAdminDto): Promise<Omit<Admin, 'password'>> {
-
-    if (dto.puskesmas_id === '') {
-      dto.puskesmas_id = undefined;
-    }
-
     const admin = await this.findOne(id);
     if (!admin) {
       throw new NotFoundException('Admin tidak ditemukan');
     }
 
-    // validasi password
     if (dto.password) {
       if (!dto.password_confirmation) {
         throw new BadRequestException('Konfirmasi password wajib diisi');
@@ -122,12 +116,17 @@ export class AdminsService {
     }
 
     const newRole = dto.role || admin.role;
+    
+    // Handle empty string as null (unassignment)
+    if (dto.puskesmas_id === '') {
+      dto.puskesmas_id = null;
+    }
+
     const newPuskesmasId =
       dto.puskesmas_id !== undefined ? dto.puskesmas_id : admin.puskesmas_id;
 
-    // logic operator
+    // logic operator: must have puskesmas
     if (newRole === AdminRole.OPERATOR) {
-
       if (!newPuskesmasId) {
         throw new BadRequestException('Operator harus memiliki puskesmas');
       }
@@ -146,10 +145,19 @@ export class AdminsService {
       }
     }
 
-    Object.assign(admin, dto);
+    // Explicitly handle puskesmas_id change to ensure relation objects don't interfere
+    if (dto.puskesmas_id !== undefined) {
+      admin.puskesmas_id = dto.puskesmas_id;
+      admin.puskesmas = null; // Clear eager-loaded object
+    }
+
+    // Assign other properties
+    const { puskesmas_id, ...otherDto } = dto;
+    Object.assign(admin, otherDto);
 
     const saved = await this.adminRepository.save(admin);
 
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = saved as Admin;
 
     return result;
